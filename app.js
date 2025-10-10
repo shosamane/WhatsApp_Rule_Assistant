@@ -291,7 +291,7 @@ function pickWhatsAppTxt(zip) {
   return scored.length ? scored[0].n : null;
 }
 
-async function extractTextFromZip(file) {
+async function extractChatFromZip(file) {
   const zip = await JSZip.loadAsync(file);
   const entryName = pickWhatsAppTxt(zip);
   if (!entryName) throw new Error("No WhatsApp .txt found in ZIP");
