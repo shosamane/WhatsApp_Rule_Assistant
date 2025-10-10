@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WhatsApp Rule Experiment</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <h1>WhatsApp Rule Evaluation</h1>
+      <p>Upload a chat export, pick the group type, and compare generic versus context-aware rules.</p>
+    </header>
+
+    <section class="panel">
+      <h2>1. Provide Chat Export</h2>
+      <div id="drop-zone" class="drop-zone" tabindex="0" aria-label="Drop WhatsApp export folder or zip here">
+        <p class="dz-instructions"><strong>Drop the export folder or zip</strong> or use the pickers below.</p>
+        <p class="dz-hint">The folder or zip must include <code>_chat.txt</code>. Media files are ignored.</p>
+      </div>
+      <div class="picker-row">
+        <label class="picker-label" for="chat-folder">Choose folder:</label>
+        <input id="chat-folder" type="file" webkitdirectory directory />
+      </div>
+      <div class="picker-row">
+        <label class="picker-label" for="chat-zip">Or choose zip:</label>
+        <input id="chat-zip" type="file" accept=".zip" />
+      </div>
+      <div class="file-status" id="file-status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="panel">
+      <h2>2. Describe the Group</h2>
+      <label class="field">
+        <span>Group type</span>
+        <select id="group-type">
+          <option value="" selected disabled>Select a category</option>
+          <option value="Personal">Personal (Family / Friends / Social circle / Neighborhood)</option>
+          <option value="Professional">Professional (Workplace / Project / Alumni / Professional Network / Client)</option>
+          <option value="Learning">Learning (Class / Study / Research group / School parent group)</option>
+          <option value="Hobby &amp; Community of Practice">Hobby &amp; Community of Practice (Sports / Arts / Music / Religion / Coding / Politics)</option>
+          <option value="Civic / Volunteer / Mutual Aid">Civic / Volunteer / Mutual Aid (Resident Welfare / Non-profit / Crisis coordination)</option>
+          <option value="Marketplace and logistics">Marketplace and Logistics</option>
+          <option value="Public Facing and Announcement">Public Facing and Announcement</option>
+        </select>
+      </label>
+      <p class="tip">Gemini API access is preconfigured for this prototype.</p>
+    </section>
+
+    <section class="panel">
+      <h2>3. Generate Rules</h2>
+      <button id="generate-btn" class="primary" disabled>Generate 16 Rules</button>
+      <div id="loading" class="loading" hidden>
+        <span class="spinner" aria-hidden="true"></span>
+        <span>Suggesting some rules...</span>
+      </div>
+      <div id="generation-errors" class="errors" role="alert"></div>
+    </section>
+
+    <section class="panel" id="ranking-panel" hidden>
+      <h2>4. Rank the Rules</h2>
+      <p>Drag up to seven rules into the ranking zone. The list is ordered from Rank 1 at the top to Rank 7 at the bottom. You must rank at least one rule.</p>
+      <p id="ranking-note" class="note" hidden></p>
+      <div class="ranking-layout">
+        <section class="ranking-column">
+          <header class="column-header">
+            <h3>Ranking Zone</h3>
+            <p>Drop rules here to assign their rank. Drag within the list to reorder, or back to the pool to remove.</p>
+          </header>
+          <div id="ranked-list" class="rule-list drop-target" role="list" aria-label="Ranked rules"></div>
+        </section>
+        <section class="ranking-column">
+          <header class="column-header">
+            <h3>All Rules</h3>
+            <p>Start by dragging rules from here.</p>
+          </header>
+          <div id="available-list" class="rule-list" role="list" aria-label="Available rules"></div>
+        </section>
+      </div>
+      <button id="submit-rankings" class="primary outline">Submit Rankings</button>
+      <div id="ranking-error" class="errors" role="alert"></div>
+      <div id="ranking-summary" class="summary" hidden></div>
+    </section>
+  </main>
+
+  <template id="rule-card-template">
+    <article class="rule-card" draggable="true">
+      <span class="rule-rank" aria-hidden="true"></span>
+      <p class="rule-text"></p>
+    </article>
+  </template>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
