@@ -17,30 +17,34 @@ app.use(`${base}/api/`, express.json({ limit: "1mb" }));
 // ---- static site under /webhook3 ----
 app.use(base, express.static(root, { extensions: ["html"] }));
 
-// ---- server-side proxy to Gemini (no API key in browser) ----
-// Requires: export GEMINI_API_KEY=<key> (we'll keep it in /etc/webhook3.env via systemd)
+app.use(`${base}/api/`, express.json({ limit: "1mb" }));
+
 app.post(`${base}/api/generate`, async (req, res) => {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: "Missing GEMINI_API_KEY on server" });
-    }
+    if (!apiKey) return res.status(500).json({ error: "Missing GEMINI_API_KEY on server" });
 
     const {
       prompt,
-      model = "models/gemini-2.5-pro",
+      model = "models/gemini-2.5-pro",   // you can switch to "models/gemini-2.5-flash" if you prefer
       temperature = 0.65,
       topP = 0.9,
     } = req.body || {};
-
-    if (!prompt || typeof prompt !== "string") {
+    if (typeof prompt !== "string" || !prompt.trim()) {
       return res.status(400).json({ error: "prompt (string) is required" });
     }
+
+    // Pro spends tokens on hidden thinking; cap it so text is produced.
+    const generationConfig = {
+      temperature,
+      topP,
+      responseMimeType: "text/plain",
+    };
 
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
     const payload = {
       contents: [{ role: "user", parts: [{ text: prompt }]}],
-      generationConfig: { temperature, topP, maxOutputTokens },
+      generationConfig,
     };
 
     const upstream = await fetch(endpoint, {
@@ -50,13 +54,9 @@ app.post(`${base}/api/generate`, async (req, res) => {
     });
 
     const data = await upstream.json();
-    if (!upstream.ok) {
-      return res.status(upstream.status).json({ error: "upstream_error", details: data });
-    }
+    if (!upstream.ok) return res.status(upstream.status).json({ error: "upstream_error", details: data });
 
-    const text =
-      data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "";
-
+    const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "";
     return res.json({ text, raw: data });
   } catch (err) {
     console.error("Gemini proxy error:", err);

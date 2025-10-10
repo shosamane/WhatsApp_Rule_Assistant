@@ -112,9 +112,9 @@ function parseChatFile(contents) {
   const participants = new Map();
   let current = null;
 
-  // e.g. [9/1/23, 10:33:52 PM] Name: Text   (seconds + Unicode spaces ok)
+  // [MM/DD/YY, 10:33:52 PM] Name: Text
   const BRACKET_RE = /^\[(\d{1,2})\/(\d{1,2})\/(\d{2,4}),\s*([^\]]+)\]\s(.+?):\s([\s\S]*)$/;
-  // e.g. 9/1/23, 10:33 PM - Name: Text     (optional seconds; en/em dashes)
+  // MM/DD/YY, 10:33:52 PM - Name: Text  (hyphen/en-dash/em-dash)
   const HYPHEN_RE  = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4}),\s*([^-–—]+)\s*[-–—]\s(.+?):\s([\s\S]*)$/;
 
   for (const raw of lines) {
@@ -123,20 +123,20 @@ function parseChatFile(contents) {
     // Normalize hidden/odd chars WhatsApp inserts
     const line = raw
       .replace(/[\u200e\u200f]/g, "")       // LRM/RLM
-      .replace(/\u202f|\u00A0/g, " ");      // NNBSP/NBSP -> space
+      .replace(/\u202f|\u00A0/g, " ");      // (narrow) NBSP → space
 
     let m = line.match(BRACKET_RE) || line.match(HYPHEN_RE);
     if (m) {
       let [, mm, dd, yy, timePart, sender, body] = m;
 
-      // normalize date (guess D/M if obvious)
+      // Normalize date (swap if clearly DD/MM)
       let y = yy.length === 2 ? Number(`20${yy}`) : Number(yy);
       let month = Number(mm), day = Number(dd);
       if (month > 12 && day <= 12) [month, day] = [day, month];
 
       const t = parseTimePart(timePart);
       if (!t) {
-        // If the time segment is weird, treat as continuation
+        // If the time is weird, treat this as a continuation line
         if (current) {
           current.raw += `\n${raw.trim()}`;
           current.preview = createPreview(current.raw);
@@ -170,11 +170,12 @@ function parseChatFile(contents) {
   return { messages, participants };
 }
 
-// Accepts "10:33:52 PM", "10:33 PM", "22:33:52", with stray dots/NNBSP
+// Accepts "10:33:52 PM", "10:33 PM", "22:33:52" (handles dots & NNBSP)
 function parseTimePart(timePart) {
   const clean = String(timePart).replace(/[.\u202f\u00A0]/g, " ").replace(/\s+/g, " ").trim();
   let m, hh = 0, mm = 0, ss = 0;
 
+  // AM/PM
   if ((m = clean.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AP]M)$/i))) {
     hh = +m[1]; mm = +m[2]; ss = +(m[3] || 0);
     const pm = /PM/i.test(m[4]);
@@ -182,11 +183,13 @@ function parseTimePart(timePart) {
     else if (pm) hh += 12;
     return { hh, mm, ss };
   }
+  // 24h
   if ((m = clean.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/))) {
     return { hh: +m[1], mm: +m[2], ss: +(m[3] || 0) };
   }
   return null;
 }
+
 
 
 // Keep/adjust your helpers as needed
@@ -276,26 +279,32 @@ function enforceCharacterBudget(messages, maxChars) {
 }
 
 function pickWhatsAppTxt(zip) {
-  const names = Object.keys(zip.files);
-  const scored = names
-    .filter(n => !zip.files[n].dir)
-    .map(n => {
-      const L = n.toLowerCase();
-      let score = 0;
-      if (L.endsWith("_chat.txt")) score += 100;
-      if (L.endsWith(".txt")) score += 10;
-      if (L.includes("chat")) score += 5;
-      return { n, score };
-    })
-    .sort((a, b) => b.score - a.score);
+  const names = Object.keys(zip.files).filter(n => !zip.files[n].dir);
+  // Prefer the canonical name, otherwise fall back to any chat-like .txt
+  const scored = names.map(n => {
+    const L = n.toLowerCase();
+    let score = 0;
+    if (L.endsWith("_chat.txt")) score += 100;
+    if (L.endsWith(".txt")) score += 10;
+    if (L.includes("chat")) score += 5;
+    return { n, score };
+  }).sort((a, b) => b.score - a.score);
   return scored.length ? scored[0].n : null;
 }
 
-async function extractChatFromZip(file) {
-  const zip = await JSZip.loadAsync(file);
+async function extractChatFromZip(zipFile) {
+  if (typeof JSZip === "undefined") {
+    throw new Error("Zip support is unavailable. Please refresh the page and try again.");
+  }
+  const arrayBuffer = await zipFile.arrayBuffer();
+  const zip = await JSZip.loadAsync(arrayBuffer);
+
   const entryName = pickWhatsAppTxt(zip);
-  if (!entryName) throw new Error("No WhatsApp .txt found in ZIP");
-  return await zip.files[entryName].async("string");
+  if (!entryName) throw new Error("Could not find a WhatsApp .txt inside the selected zip file.");
+
+  const chatContents = await zip.files[entryName].async("string");
+  const extractedFile = new File([chatContents], entryName, { type: "text/plain" });
+  return { file: extractedFile, entryName };
 }
 
 
@@ -441,11 +450,11 @@ function createActivityNotes(messages) {
 }
 
 
-async function callGemini({ prompt, model = "models/gemini-2.5-pro" }) {
+async function callGemini({ prompt, model = "models/gemini-2.5-pro"}) {
   const resp = await fetch("/webhook3/api/generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, model, temperature: 0.65, topP: 0.9 })
+    body: JSON.stringify({ prompt, model, temperature: 0.65, topP: 0.9 }),
   });
   if (!resp.ok) {
     const err = await resp.text().catch(() => "");
@@ -454,6 +463,7 @@ async function callGemini({ prompt, model = "models/gemini-2.5-pro" }) {
   const data = await resp.json();
   return data.text || "";
 }
+
 
 
 function parseRules(rawText) {
