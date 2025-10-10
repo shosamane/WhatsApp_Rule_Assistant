@@ -31,7 +31,6 @@ app.post(`${base}/api/generate`, async (req, res) => {
       model = "models/gemini-2.5-pro",
       temperature = 0.65,
       topP = 0.9,
-      maxOutputTokens = 1024,
     } = req.body || {};
 
     if (!prompt || typeof prompt !== "string") {

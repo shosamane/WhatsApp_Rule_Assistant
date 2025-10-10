@@ -110,62 +110,59 @@ function parseChatFile(contents) {
   const lines = contents.split(/\r?\n/);
   const messages = [];
   const participants = new Map();
-  let currentMessage = null;
+  let current = null;
 
-  // [MM/DD/YY, 09:30 PM] Name: Text
-  const BRACKET_RE = /^\[(\d{1,2})\/(\d{1,2})\/(\d{2,4}),\s*([^\]]+)\]\s([^:]+):\s([\s\S]+)$/;
-  // MM/DD/YY, 09:30 PM - Name: Text   (hyphen/en-dash/em-dash)
-  const HYPHEN_RE  = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4}),\s*([^-–—]+)\s*[-–—]\s([^:]+):\s([\s\S]+)$/;
+  // e.g. [9/1/23, 10:33:52 PM] Name: Text   (seconds + Unicode spaces ok)
+  const BRACKET_RE = /^\[(\d{1,2})\/(\d{1,2})\/(\d{2,4}),\s*([^\]]+)\]\s(.+?):\s([\s\S]*)$/;
+  // e.g. 9/1/23, 10:33 PM - Name: Text     (optional seconds; en/em dashes)
+  const HYPHEN_RE  = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4}),\s*([^-–—]+)\s*[-–—]\s(.+?):\s([\s\S]*)$/;
 
-  for (const rawLine of lines) {
-    if (!rawLine.trim()) continue;
+  for (const raw of lines) {
+    if (!raw.trim()) continue;
 
-    const line = rawLine
-      .replace(/[\u200e\u200f]/g, "")   // LRM/RLM
-      .replace(/\u202f|\u00A0/g, " ");  // NBSPs → space
+    // Normalize hidden/odd chars WhatsApp inserts
+    const line = raw
+      .replace(/[\u200e\u200f]/g, "")       // LRM/RLM
+      .replace(/\u202f|\u00A0/g, " ");      // NNBSP/NBSP -> space
 
-    let m = line.match(BRACKET_RE);
-    if (!m) m = line.match(HYPHEN_RE);
-
+    let m = line.match(BRACKET_RE) || line.match(HYPHEN_RE);
     if (m) {
-      let [, mm, dd, yy, timePart, senderRaw, body] = m;
+      let [, mm, dd, yy, timePart, sender, body] = m;
 
-      let year = Number(yy.length === 2 ? `20${yy}` : yy);
-      let monthNum = Number(mm);
-      let dayNum = Number(dd);
+      // normalize date (guess D/M if obvious)
+      let y = yy.length === 2 ? Number(`20${yy}`) : Number(yy);
+      let month = Number(mm), day = Number(dd);
+      if (month > 12 && day <= 12) [month, day] = [day, month];
 
-      // If it looks like DD/MM/YYYY (e.g., 25/09/2025), swap to MM/DD
-      if (monthNum > 12 && dayNum <= 12) [monthNum, dayNum] = [dayNum, monthNum];
-
-      const isoDate = `${year}-${String(monthNum).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
-      const timeNormalized = String(timePart).replace(/\./g, "").trim(); // "p.m." -> "pm"
-      const timestamp = new Date(`${isoDate} ${timeNormalized}`);
-      if (!Number.isFinite(timestamp.getTime())) {
-        // Unparseable time; treat as continuation
-        if (currentMessage) {
-          currentMessage.raw += `\n${rawLine.trim()}`;
-          currentMessage.preview = createPreview(currentMessage.raw);
+      const t = parseTimePart(timePart);
+      if (!t) {
+        // If the time segment is weird, treat as continuation
+        if (current) {
+          current.raw += `\n${raw.trim()}`;
+          current.preview = createPreview(current.raw);
         }
         continue;
       }
 
-      const sender = senderRaw.trim();
+      const ts = new Date(y, month - 1, day, t.hh, t.mm, t.ss);
+      const text = (body ?? "").trim();
+
       const entry = {
-        timestamp,
-        timestampIso: timestamp.toISOString(),
-        sender,
-        raw: body.trim(),
-        preview: createPreview(body),
-        type: inferMediaType(body),
+        timestamp: ts,
+        timestampIso: ts.toISOString(),
+        sender: sender.trim(),
+        raw: text,
+        preview: createPreview(text),
+        type: inferMediaType(text),
       };
 
       messages.push(entry);
-      participants.set(sender, (participants.get(sender) ?? 0) + 1);
-      currentMessage = entry;
-    } else if (currentMessage) {
-      // Multiline message continuation
-      currentMessage.raw += `\n${line.trim()}`;
-      currentMessage.preview = createPreview(currentMessage.raw);
+      participants.set(entry.sender, (participants.get(entry.sender) ?? 0) + 1);
+      current = entry;
+    } else if (current) {
+      // Multi-line continuation
+      current.raw += `\n${line.trim()}`;
+      current.preview = createPreview(current.raw);
     }
   }
 
@@ -173,26 +170,40 @@ function parseChatFile(contents) {
   return { messages, participants };
 }
 
+// Accepts "10:33:52 PM", "10:33 PM", "22:33:52", with stray dots/NNBSP
+function parseTimePart(timePart) {
+  const clean = String(timePart).replace(/[.\u202f\u00A0]/g, " ").replace(/\s+/g, " ").trim();
+  let m, hh = 0, mm = 0, ss = 0;
 
-function inferMediaType(text) {
-  const lower = text.toLowerCase();
-  if (lower.includes("image omitted")) return "image";
-  if (lower.includes("video omitted")) return "video";
-  if (lower.includes("audio omitted") || lower.includes("voice message")) return "audio";
-  if (lower.includes("sticker omitted")) return "sticker";
-  if (lower.includes("document omitted")) return "document";
-  if (lower.startsWith("<attached:")) return "document";
-  if (/https?:\/\//i.test(text)) return "link";
-  if (lower.includes("deleted this message")) return "system";
+  if ((m = clean.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AP]M)$/i))) {
+    hh = +m[1]; mm = +m[2]; ss = +(m[3] || 0);
+    const pm = /PM/i.test(m[4]);
+    if (hh === 12) hh = pm ? 12 : 0;
+    else if (pm) hh += 12;
+    return { hh, mm, ss };
+  }
+  if ((m = clean.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/))) {
+    return { hh: +m[1], mm: +m[2], ss: +(m[3] || 0) };
+  }
+  return null;
+}
+
+// Keep/adjust your helpers as needed
+function inferMediaType(s) {
+  const l = (s || "").toLowerCase().replace(/[\u200e\u200f]/g, "");
+  if (/\bimage omitted\b/.test(l)) return "image";
+  if (/\bvideo omitted\b/.test(l)) return "video";
+  if (/\baudio omitted\b/.test(l)) return "audio";
+  if (/\bdocument omitted\b/.test(l)) return "document";
+  if (/\bthis message was deleted\b/.test(l)) return "deleted";
+  if (/changed this group's (icon|name)/i.test(l)) return "event";
   return "text";
 }
 
-function createPreview(text) {
-  const trimmed = text.trim();
-  if (!trimmed) return "(empty message)";
-  if (trimmed.length <= 240) return trimmed;
-  return `${trimmed.slice(0, 240)}...`;
+function createPreview(s) {
+  return String(s || "").replace(/\s+/g, " ").slice(0, 140);
 }
+
 
 function computeContextWindow(messages) {
   const now = new Date();
@@ -263,26 +274,29 @@ function enforceCharacterBudget(messages, maxChars) {
   };
 }
 
-async function extractChatFromZip(zipFile) {
-  if (typeof JSZip === "undefined") {
-    throw new Error("Zip support is unavailable. Please refresh the page and try again.");
-  }
-
-  const arrayBuffer = await zipFile.arrayBuffer();
-  const zip = await JSZip.loadAsync(arrayBuffer);
-  const entryName = Object.keys(zip.files).find((name) => {
-    const n = name.toLowerCase();
-    return n.endsWith("_chat.txt") || (n.endsWith(".txt") && n.includes("chat"));
-  });
-
-  if (!entryName) {
-    throw new Error("Could not find _chat.txt inside the selected zip file.");
-  }
-
-  const chatContents = await zip.files[entryName].async("string");
-  const extractedFile = new File([chatContents], "_chat.txt", { type: "text/plain" });
-  return { file: extractedFile, entryName };
+function pickWhatsAppTxt(zip) {
+  const names = Object.keys(zip.files);
+  const scored = names
+    .filter(n => !zip.files[n].dir)
+    .map(n => {
+      const L = n.toLowerCase();
+      let score = 0;
+      if (L.endsWith("_chat.txt")) score += 100;
+      if (L.endsWith(".txt")) score += 10;
+      if (L.includes("chat")) score += 5;
+      return { n, score };
+    })
+    .sort((a, b) => b.score - a.score);
+  return scored.length ? scored[0].n : null;
 }
+
+async function extractTextFromZip(file) {
+  const zip = await JSZip.loadAsync(file);
+  const entryName = pickWhatsAppTxt(zip);
+  if (!entryName) throw new Error("No WhatsApp .txt found in ZIP");
+  return await zip.files[entryName].async("string");
+}
+
 
 async function loadChatFile(chat, displayLabel) {
   try {
