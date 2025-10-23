@@ -3,6 +3,7 @@ const fileInput = document.getElementById("chat-folder");
 const zipInput = document.getElementById("chat-zip");
 const fileStatus = document.getElementById("file-status");
 const groupTypeSelect = document.getElementById("group-type");
+const modelProviderSelect = document.getElementById("model-provider");
 const generateBtn = document.getElementById("generate-btn");
 const loadingBox = document.getElementById("loading");
 const errorBox = document.getElementById("generation-errors");
@@ -14,6 +15,8 @@ const rankingError = document.getElementById("ranking-error");
 const rankingSummary = document.getElementById("ranking-summary");
 const ruleCardTemplate = document.getElementById("rule-card-template");
 const rankingNote = document.getElementById("ranking-note");
+const loadingSpinner = loadingBox?.querySelector(".spinner") || null;
+const loadingText = loadingBox?.querySelector(".loading-text") || null;
 
 let chatFile = null;
 let parsedMessages = [];
@@ -21,12 +24,64 @@ let contextualWindow = [];
 let allRules = [];
 let availableRules = [];
 let rankedRules = [];
+let loadingResetTimer = null;
 
 const MAX_SELECTED_RULES = 7;
 const MAX_CONTEXT_CHARS = 300000;
 const DRAG_RULE_ID = "text/x-rule-id";
 const DRAG_RULE_SOURCE = "text/x-rule-source";
 const ZIP_FILE_REGEX = /\.zip$/i;
+const MODEL_CONFIG = {
+  gemini: { model: "models/gemini-2.5-pro" },
+  openai: { model: "gpt-4.1" },
+};
+
+function setLoadingState(state) {
+  if (!loadingBox) return;
+
+  if (loadingResetTimer) {
+    clearTimeout(loadingResetTimer);
+    loadingResetTimer = null;
+  }
+
+  if (state === "loading") {
+    if (loadingSpinner) {
+      loadingSpinner.style.display = "";
+    }
+    if (loadingText) {
+      loadingText.textContent = "Suggesting some rules...";
+    }
+    loadingBox.hidden = false;
+    loadingBox.dataset.state = "loading";
+    return;
+  }
+
+  if (state === "ready") {
+    if (loadingSpinner) {
+      loadingSpinner.style.display = "none";
+    }
+    if (loadingText) {
+      loadingText.textContent = "Rules ready! Drag them into the ranking zone.";
+    }
+    loadingBox.hidden = false;
+    loadingBox.dataset.state = "ready";
+    loadingResetTimer = window.setTimeout(() => {
+      if (loadingBox.dataset.state === "ready") {
+        setLoadingState("idle");
+      }
+    }, 2500);
+    return;
+  }
+
+  loadingBox.hidden = true;
+  delete loadingBox.dataset.state;
+  if (loadingSpinner) {
+    loadingSpinner.style.display = "";
+  }
+  if (loadingText) {
+    loadingText.textContent = "Suggesting some rules...";
+  }
+}
 
 rankedList.dataset.emptyMessage = "Drag rules here to rank them (max 7).";
 availableList.dataset.emptyMessage = "Generate rules to begin.";
@@ -92,7 +147,7 @@ Task: Create exactly eight governance rules tailored to the observed behaviours.
 Requirements:
 - Each rule must be grounded in patterns surfaced by the transcript, but do not mention the transcript or the analysis process.
 - Mix prescriptive and restrictive guidance.
-- Reference specific behaviours only when they appear in the excerpt (e.g., late-night forwards, media flooding, off-topic promotions) and state them as direct rules.
+- Reference specific behaviours only when they appear in the excerpt (e.g., late-night forwards, media flooding, off-topic promotions, other similar behavior) and state them as direct rules.
 - Keep tone constructive and neutral; avoid naming individuals or exposing personal data.
 - Avoid numbering, bullet symbols, or extra commentary.
 
@@ -450,15 +505,15 @@ function createActivityNotes(messages) {
 }
 
 
-async function callGemini({ prompt, model = "models/gemini-2.5-pro"}) {
+async function callRuleModel({ provider = "gemini", prompt, model, temperature = 0.65, topP = 0.9 }) {
   const resp = await fetch("/webhook3/api/generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, model, temperature: 0.65, topP: 0.9 }),
+    body: JSON.stringify({ provider, prompt, model, temperature, topP }),
   });
   if (!resp.ok) {
     const err = await resp.text().catch(() => "");
-    throw new Error(`Gemini proxy error: ${resp.status} ${err}`);
+    throw new Error(`Generation proxy error: ${resp.status} ${err}`);
   }
   const data = await resp.json();
   return data.text || "";
@@ -734,6 +789,9 @@ if (zipInput) {
 }
 
 groupTypeSelect.addEventListener("change", updateGenerateButtonState);
+if (modelProviderSelect) {
+  modelProviderSelect.addEventListener("change", updateGenerateButtonState);
+}
 
 async function assignChatFile(fileList) {
   if (!fileList.length) {
@@ -750,6 +808,7 @@ async function assignChatFile(fileList) {
       const success = await loadChatFile(chatFile, `${zipFile.name} > ${entryName}`);
       if (success) {
         clearRulesUI();
+        setLoadingState("idle");
       } else {
         chatFile = null;
       }
@@ -794,6 +853,7 @@ async function assignChatFile(fileList) {
   const success = await loadChatFile(chatFile, label);
   if (success) {
     clearRulesUI();
+    setLoadingState("idle");
   } else {
     chatFile = null;
   }
@@ -811,9 +871,11 @@ generateBtn.addEventListener("click", async () => {
   }
 
   const groupType = groupTypeSelect.value;
+  const provider = modelProviderSelect?.value || "gemini";
+  const providerModel = MODEL_CONFIG[provider]?.model;
 
   errorBox.textContent = "";
-  loadingBox.hidden = false;
+  setLoadingState("loading");
   generateBtn.disabled = true;
   clearRulesUI();
   availableList.dataset.emptyMessage = "Loading new rules...";
@@ -825,8 +887,8 @@ generateBtn.addEventListener("click", async () => {
     const contextualPrompt = buildContextualPrompt({ groupType, stats, messages: contextualWindow });
 
     const [genericRaw, contextualRaw] = await Promise.all([
-      callGemini({ prompt: genericPrompt }),
-      callGemini({ prompt: contextualPrompt }),
+      callRuleModel({ provider, prompt: genericPrompt, model: providerModel }),
+      callRuleModel({ provider, prompt: contextualPrompt, model: providerModel }),
     ]);
 
     const genericRules = parseRules(genericRaw).map((rule, index) => ({
@@ -845,7 +907,7 @@ generateBtn.addEventListener("click", async () => {
     availableRules = [...allRules];
     rankedRules = [];
     renderRuleLists();
-    loadingBox.hidden = true;
+    setLoadingState("ready");
   } catch (error) {
     console.error(error);
     errorBox.textContent = error.message;
@@ -857,8 +919,8 @@ generateBtn.addEventListener("click", async () => {
       rankingNote.hidden = true;
       rankingNote.textContent = "";
     }
+    setLoadingState("idle");
   } finally {
-    loadingBox.hidden = true;
     updateGenerateButtonState();
   }
 });

@@ -182,6 +182,15 @@ input:focus {
   font-weight: 500;
 }
 
+.loading[data-state="ready"] {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.loading[data-state="ready"] .spinner {
+  display: none;
+}
+
 .spinner {
   width: 1.5rem;
   height: 1.5rem;

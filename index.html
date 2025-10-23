@@ -45,7 +45,14 @@
           <option value="Public Facing and Announcement">Public Facing and Announcement</option>
         </select>
       </label>
-      <p class="tip">Gemini API access is preconfigured for this prototype.</p>
+      <label class="field">
+        <span>Model provider</span>
+        <select id="model-provider">
+          <option value="gemini" selected>Gemini 2.5 Pro</option>
+          <option value="openai">OpenAI GPT-4.1</option>
+        </select>
+      </label>
+      <p class="tip">Configure API keys on the server for the selected provider.</p>
     </section>
 
     <section class="panel">
@@ -53,7 +60,7 @@
       <button id="generate-btn" class="primary" disabled>Generate 16 Rules</button>
       <div id="loading" class="loading" hidden>
         <span class="spinner" aria-hidden="true"></span>
-        <span>Suggesting some rules...</span>
+        <span class="loading-text">Suggesting some rules...</span>
       </div>
       <div id="generation-errors" class="errors" role="alert"></div>
     </section>
