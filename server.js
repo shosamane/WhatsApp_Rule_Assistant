@@ -70,11 +70,10 @@ app.post(`${base}/api/generate`, async (req, res) => {
           Authorization: `Bearer ${openAiKey}`,
         },
         body: JSON.stringify({
-          model: model || "gpt-4.1",
+          model: model || "gpt-5",
           input: prompt,
           temperature,
           top_p: topP,
-          max_output_tokens: 1024,
         }),
       });
 
