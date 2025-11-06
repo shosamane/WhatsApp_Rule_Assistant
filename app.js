@@ -3,7 +3,6 @@ const fileInput = document.getElementById("chat-folder");
 const zipInput = document.getElementById("chat-zip");
 const fileStatus = document.getElementById("file-status");
 const groupTypeSelect = document.getElementById("group-type");
-const modelProviderSelect = document.getElementById("model-provider");
 const generateBtn = document.getElementById("generate-btn");
 const loadingBox = document.getElementById("loading");
 const errorBox = document.getElementById("generation-errors");
@@ -31,10 +30,7 @@ const MAX_CONTEXT_CHARS = 300000;
 const DRAG_RULE_ID = "text/x-rule-id";
 const DRAG_RULE_SOURCE = "text/x-rule-source";
 const ZIP_FILE_REGEX = /\.zip$/i;
-const MODEL_CONFIG = {
-  gemini: { model: "models/gemini-2.5-pro" },
-  openai: { model: "gpt-4.1" },
-};
+const GEMINI_MODEL = "models/gemini-2.5-pro";
 
 function setLoadingState(state) {
   if (!loadingBox) return;
@@ -505,15 +501,15 @@ function createActivityNotes(messages) {
 }
 
 
-async function callRuleModel({ provider = "gemini", prompt, model, temperature = 0.65, topP = 0.9 }) {
+async function callGemini({ prompt, model = GEMINI_MODEL }) {
   const resp = await fetch("/webhook3/api/generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ provider, prompt, model, temperature, topP }),
+    body: JSON.stringify({ prompt, model, temperature: 0.65, topP: 0.9 }),
   });
   if (!resp.ok) {
     const err = await resp.text().catch(() => "");
-    throw new Error(`Generation proxy error: ${resp.status} ${err}`);
+    throw new Error(`Gemini proxy error: ${resp.status} ${err}`);
   }
   const data = await resp.json();
   return data.text || "";
@@ -789,9 +785,6 @@ if (zipInput) {
 }
 
 groupTypeSelect.addEventListener("change", updateGenerateButtonState);
-if (modelProviderSelect) {
-  modelProviderSelect.addEventListener("change", updateGenerateButtonState);
-}
 
 async function assignChatFile(fileList) {
   if (!fileList.length) {
@@ -871,8 +864,6 @@ generateBtn.addEventListener("click", async () => {
   }
 
   const groupType = groupTypeSelect.value;
-  const provider = modelProviderSelect?.value || "gemini";
-  const providerModel = MODEL_CONFIG[provider]?.model;
 
   errorBox.textContent = "";
   setLoadingState("loading");
@@ -887,8 +878,8 @@ generateBtn.addEventListener("click", async () => {
     const contextualPrompt = buildContextualPrompt({ groupType, stats, messages: contextualWindow });
 
     const [genericRaw, contextualRaw] = await Promise.all([
-      callRuleModel({ provider, prompt: genericPrompt, model: providerModel }),
-      callRuleModel({ provider, prompt: contextualPrompt, model: providerModel }),
+      callGemini({ prompt: genericPrompt }),
+      callGemini({ prompt: contextualPrompt }),
     ]);
 
     const genericRules = parseRules(genericRaw).map((rule, index) => ({
