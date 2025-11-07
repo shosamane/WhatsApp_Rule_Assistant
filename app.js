@@ -87,18 +87,21 @@ const initialDropZoneMarkup = dropZone.innerHTML;
 
 const GENERIC_PROMPT_TEMPLATE = ({ groupType }) => `You are assisting with an experiment that compares generic versus context-aware governance rules for WhatsApp groups.
 
-Task: Provide exactly eight governance rules that would be suitable for a WhatsApp group categorised as "${groupType}". Each rule must be a single, self-contained statement (one or two short sentences) describing the expectation or restriction.
+Task: Provide exactly eight governance rules that would be suitable for a WhatsApp group categorised as "${groupType}". Each rule must be a single, self-contained statement (one or two short sentences) describing the expectation or restriction. For each rule, also provide a short "reason" sentence.
 
 Requirements:
 - Balance prescriptive guidance (what members should do) and restrictive guidance (what members must avoid).
 - Focus on broadly applicable group norms without referencing any transcript, participant, or analysis process.
-- Keep each statement concise, actionable, and neutral in tone. Avoid duplicates and numbering.
+- For each rule include a neutral, general "reason" that explains the benefit of the rule without implying knowledge of any specific group, transcript, or participants.
+- Keep tone neutral and comparable in abstraction level to the context-aware variant (i.e., reasons should read like universal justifications, not case-specific commentary).
+- Keep each statement concise and actionable; avoid duplicates and numbering.
 
 Return JSON only in this schema:
 {
   "rules": [
     {
-      "text": "Rule statement"
+      "text": "Rule statement",
+      "reason": "Neutral, general justification"
     }
   ]
 }`;
@@ -138,20 +141,22 @@ Context summary:
 Below is a transcript excerpt containing the most recent ${messages.length} rows from the selected window. Each row is JSON with timestamp, sender, mediaType (text|image|video|audio|document|link|system), and content (redacted on client when needed). Use it to understand recurring topics, conflicts, and norms.
 ${messagesBlock}
 
-Task: Create exactly eight governance rules tailored to the observed behaviours. Express each rule as a single, self-contained statement (one or two short sentences) that sets clear expectations or boundaries for the group.
+Task: Create exactly eight governance rules tailored to the observed behaviours. Express each rule as a single, self-contained statement (one or two short sentences) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
 
 Requirements:
-- Each rule must be grounded in patterns surfaced by the transcript, but do not mention the transcript or the analysis process.
+- Each rule must be grounded in patterns surfaced by the transcript, but do not mention the transcript, chat logs, participants, or the analysis process. Do not write "this group" or otherwise reveal that these rules come from a specific dataset.
 - Mix prescriptive and restrictive guidance.
-- Reference specific behaviours only when they appear in the excerpt (e.g., late-night forwards, media flooding, off-topic promotions, other similar behavior) and state them as direct rules.
-- Keep tone constructive and neutral; avoid naming individuals or exposing personal data.
+- Reference specific behaviours only when they appear in the excerpt (e.g., late-night forwards, media flooding, off-topic promotions), but phrase the accompanying "reason" in neutral, general terms (e.g., "to reduce late-night disruptions") rather than explicit references to the observed messages (e.g., not "because there were many late-night forwards here").
+- Keep the tone constructive and neutral; avoid naming individuals or exposing personal data.
+- Keep reasons comparable in tone and level of abstraction to the generic variant so that the two sets can be compared fairly.
 - Avoid numbering, bullet symbols, or extra commentary.
 
 Return JSON only in this schema:
 {
   "rules": [
     {
-      "text": "Rule statement"
+      "text": "Rule statement",
+      "reason": "Neutral, general justification grounded in patterns"
     }
   ]
 }`;
@@ -204,7 +209,7 @@ function parseChatFile(contents) {
         sender: sender.trim(),
         raw: text,
         preview: createPreview(text),
-        type: inferMediaType(text),
+        mediaType: inferMediaType(text),
       };
 
       messages.push(entry);
@@ -538,7 +543,8 @@ function parseRules(rawText) {
         if (!text) {
           throw new Error(`Rule ${index + 1} is empty.`);
         }
-        return { text };
+        const reason = typeof rule.reason === "string" ? rule.reason.trim() : undefined;
+        return reason ? { text, reason } : { text };
       }
 
       throw new Error(`Rule ${index + 1} is missing the 'text' property.`);
@@ -606,19 +612,31 @@ function createRuleCard(rule, options) {
   const card = fragment.firstElementChild;
   const rankEl = card.querySelector(".rule-rank");
   const textEl = card.querySelector(".rule-text");
+  const reasonEl = card.querySelector(".rule-reason");
 
   textEl.textContent = rule.text;
+  if (reasonEl) {
+    if (rule.reason) {
+      reasonEl.textContent = rule.reason;
+      reasonEl.hidden = false;
+    } else {
+      reasonEl.textContent = "";
+      reasonEl.hidden = true;
+    }
+  }
   card.dataset.ruleId = rule.id;
   card.dataset.list = isRanked ? "ranked" : "available";
 
   if (isRanked) {
     card.classList.add("is-ranked");
     rankEl.textContent = String(rank);
-    card.setAttribute("aria-label", `Rank ${rank}: ${rule.text}`);
+    const aria = rule.reason ? `Rank ${rank}: ${rule.text}. Reason: ${rule.reason}` : `Rank ${rank}: ${rule.text}`;
+    card.setAttribute("aria-label", aria);
   } else {
     card.classList.remove("is-ranked");
     rankEl.textContent = "";
-    card.setAttribute("aria-label", rule.text);
+    const aria = rule.reason ? `${rule.text}. Reason: ${rule.reason}` : rule.text;
+    card.setAttribute("aria-label", aria);
   }
 
   card.addEventListener("dragstart", handleDragStart);
