@@ -226,6 +226,109 @@ function parseChatFile(contents) {
   return { messages, participants };
 }
 
+// More robust parser that supports both iOS (_chat.txt, bracket format) and Android (named chat file, hyphen format,
+// including event lines without a colon) and DD/MM vs MM/DD heuristics.
+function parseChatFileRobust(contents) {
+  const lines = contents.split(/\r?\n/);
+  const messages = [];
+  const participants = new Map();
+  let current = null;
+
+  const BRACKET_RE = /^\[(\d{1,2})\/(\d{1,2})\/(\d{2,4}),\s*([^\]]+)\]\s(.+?):\s([\s\S]*)$/;
+  const HYPHEN_RE  = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4}),\s*([^-–—]+)\s*[-–—]\s(.+?):\s([\s\S]*)$/;
+  const HYPHEN_EVENT_RE = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4}),\s*([^-–—]+)\s*[-–—]\s([\s\S]+)$/;
+
+  // Heuristic: mark DD/MM if any date's first token > 12
+  let preferDayFirst = false;
+  for (let i = 0; i < lines.length && i < 1000; i += 1) {
+    const probe = String(lines[i]).replace(/[\u200e\u200f]/g, "").trim();
+    let mmdd = probe.match(/^\[(\d{1,2})\/(\d{1,2})\//) || probe.match(/^(\d{1,2})\/(\d{1,2})\//);
+    if (mmdd) {
+      const first = Number(mmdd[1]);
+      if (first > 12) { preferDayFirst = true; break; }
+    }
+  }
+
+  for (const raw of lines) {
+    if (!raw.trim()) continue;
+
+    const line = raw
+      .replace(/[\u200e\u200f]/g, "")
+      .replace(/\u202f|\u00A0/g, " ");
+
+    let m = line.match(BRACKET_RE) || line.match(HYPHEN_RE);
+    if (m) {
+      let [, mm, dd, yy, timePart, sender, body] = m;
+      let y = yy.length === 2 ? Number(`20${yy}`) : Number(yy);
+      let month = Number(mm), day = Number(dd);
+      if (preferDayFirst || (month > 12 && day <= 12)) [month, day] = [day, month];
+
+      const t = parseTimePart(timePart);
+      if (!t) {
+        if (current) {
+          current.raw += `\n${raw.trim()}`;
+          current.preview = createPreview(current.raw);
+        }
+        continue;
+      }
+
+      const ts = new Date(y, month - 1, day, t.hh, t.mm, t.ss);
+      const text = (body ?? "").trim();
+      const entry = {
+        timestamp: ts,
+        timestampIso: ts.toISOString(),
+        sender: sender.trim(),
+        raw: text,
+        preview: createPreview(text),
+        mediaType: inferMediaType(text),
+      };
+      messages.push(entry);
+      participants.set(entry.sender, (participants.get(entry.sender) ?? 0) + 1);
+      current = entry;
+      continue;
+    }
+
+    m = line.match(HYPHEN_EVENT_RE);
+    if (m) {
+      let [, mm, dd, yy, timePart, body] = m;
+      let y = yy.length === 2 ? Number(`20${yy}`) : Number(yy);
+      let month = Number(mm), day = Number(dd);
+      if (preferDayFirst || (month > 12 && day <= 12)) [month, day] = [day, month];
+
+      const t = parseTimePart(timePart);
+      if (!t) {
+        if (current) {
+          current.raw += `\n${raw.trim()}`;
+          current.preview = createPreview(current.raw);
+        }
+        continue;
+      }
+
+      const ts = new Date(y, month - 1, day, t.hh, t.mm, t.ss);
+      const text = (body ?? "").trim();
+      const entry = {
+        timestamp: ts,
+        timestampIso: ts.toISOString(),
+        sender: "(system)",
+        raw: text,
+        preview: createPreview(text),
+        mediaType: inferMediaType(text),
+      };
+      messages.push(entry);
+      current = entry;
+      continue;
+    }
+
+    if (current) {
+      current.raw += `\n${line.trim()}`;
+      current.preview = createPreview(current.raw);
+    }
+  }
+
+  messages.sort((a, b) => a.timestamp - b.timestamp);
+  return { messages, participants };
+}
+
 // Accepts "10:33:52 PM", "10:33 PM", "22:33:52" (handles dots & NNBSP)
 function parseTimePart(timePart) {
   const clean = String(timePart).replace(/[.\u202f\u00A0]/g, " ").replace(/\s+/g, " ").trim();
@@ -255,8 +358,10 @@ function inferMediaType(s) {
   if (/\bvideo omitted\b/.test(l)) return "video";
   if (/\baudio omitted\b/.test(l)) return "audio";
   if (/\bdocument omitted\b/.test(l)) return "document";
-  if (/\bthis message was deleted\b/.test(l)) return "deleted";
-  if (/changed this group's (icon|name)/i.test(l)) return "event";
+  if (/<media omitted>/.test(l)) return "image";
+  if (/\bthis message was deleted\b|\byou deleted this message\b/.test(l)) return "deleted";
+  if (/https?:\/\//.test(l)) return "link";
+  if (/\b(changed this group's|changed the group|created group|left|were added|was added|added|removed|settings)\b/.test(l)) return "system";
   return "text";
 }
 
@@ -335,17 +440,72 @@ function enforceCharacterBudget(messages, maxChars) {
 }
 
 function pickWhatsAppTxt(zip) {
-  const names = Object.keys(zip.files).filter(n => !zip.files[n].dir);
-  // Prefer the canonical name, otherwise fall back to any chat-like .txt
-  const scored = names.map(n => {
+  const allEntries = Object.keys(zip.files);
+  const fileNames = allEntries.filter(n => !zip.files[n].dir);
+  if (!fileNames.length) return null;
+
+  // Try to detect a single top-level folder (Android export)
+  const topLevelDirs = new Set();
+  for (const n of fileNames) {
+    const seg = n.split("/")[0];
+    if (seg && n.includes("/")) topLevelDirs.add(seg);
+  }
+
+  const stripDuplicateSuffix = (s) => s.replace(/\s*\(\d+\)\s*$/, "");
+
+  // If there are clear top-level dirs, look for <dir>/<dir>.txt or <dir>/<dirWithoutSuffix>.txt or <dirWithoutSuffix>.txt
+  for (const dir of Array.from(topLevelDirs)) {
+    const base = stripDuplicateSuffix(dir);
+    const candidates = [
+      `${dir}/${dir}.txt`,
+      `${dir}/${base}.txt`,
+      `${base}.txt`,
+    ];
+    for (const cand of candidates) {
+      if (fileNames.includes(cand)) return cand;
+    }
+  }
+
+  // Fall back to heuristic scoring
+  const scored = fileNames.map(n => {
     const L = n.toLowerCase();
     let score = 0;
-    if (L.endsWith("_chat.txt")) score += 100;
-    if (L.endsWith(".txt")) score += 10;
-    if (L.includes("chat")) score += 5;
+    if (L.endsWith("_chat.txt")) score += 1000;
+    if (/(^|\/)whatsapp chat( with)? /.test(L)) score += 200;
+    if (L.endsWith(".txt")) score += 20;
+    if (L.includes("chat")) score += 10;
+    if (/\/(media|stickers|animated_gifs|photos|videos|audio|documents)\//.test(L)) score -= 100;
+    if (/readme|manifest/.test(L)) score -= 50;
+    // Prefer shallower paths
+    const depth = (n.match(/\//g) || []).length;
+    score -= depth;
     return { n, score };
   }).sort((a, b) => b.score - a.score);
   return scored.length ? scored[0].n : null;
+}
+
+// Choose the most likely chat .txt from a folder selection
+function chooseChatFileFromList(fileList) {
+  // Normalize candidates with scoring similar to zip picker
+  const candidates = fileList.map((f) => {
+    const path = (f.webkitRelativePath || f.name || "");
+    const L = path.toLowerCase();
+    let score = 0;
+    if (L.endsWith("/_chat.txt") || L === "_chat.txt") score += 1000;
+    if (/(^|\/)whatsapp chat( with)? /.test(L)) score += 200;
+    if (L.endsWith(".txt")) score += 20;
+    if (L.includes("chat")) score += 10;
+    if (/\/(media|stickers|animated_gifs|photos|videos|audio|documents)\//.test(L)) score -= 100;
+    if (/readme|manifest/.test(L)) score -= 50;
+    // Prefer shallower paths
+    const depth = (path.match(/\//g) || []).length;
+    if (depth === 0) score += 300; // likely root-level .txt in selected folder
+    score -= depth;
+    return { file: f, score, path };
+  }).filter(c => c.path.toLowerCase().endsWith('.txt'))
+    .sort((a, b) => b.score - a.score);
+
+  return candidates.length ? candidates[0].file : null;
 }
 
 async function extractChatFromZip(zipFile) {
@@ -367,7 +527,8 @@ async function extractChatFromZip(zipFile) {
 async function loadChatFile(chat, displayLabel) {
   try {
     const contents = await chat.text();
-    const { messages } = parseChatFile(contents);
+    // Use robust parser that supports iOS and Android formats
+    const { messages } = parseChatFileRobust(contents);
     parsedMessages = messages;
     const initialWindow = computeContextWindow(messages);
     const budget = enforceCharacterBudget(initialWindow, MAX_CONTEXT_CHARS);
@@ -841,13 +1002,10 @@ async function assignChatFile(fileList) {
     return;
   }
 
-  const chat = fileList.find((file) => (
-    file.name === "_chat.txt"
-    || (file.webkitRelativePath && file.webkitRelativePath.endsWith("/_chat.txt"))
-  ));
+  const chat = chooseChatFileFromList(fileList);
 
   if (!chat) {
-    fileStatus.textContent = "Could not find _chat.txt in the selected folder.";
+    fileStatus.textContent = "Could not find a WhatsApp chat .txt in the selected folder.";
     fileStatus.style.color = "var(--error)";
     chatFile = null;
     parsedMessages = [];
