@@ -85,9 +85,9 @@ rankedList.classList.add("empty");
 availableList.classList.add("empty");
 const initialDropZoneMarkup = dropZone.innerHTML;
 
-const GENERIC_PROMPT_TEMPLATE = ({ groupType }) => `You are assisting with an experiment that compares generic versus context-aware governance rules for WhatsApp groups.
+const GENERIC_PROMPT_TEMPLATE = ({ groupType }) => `You are assisting with an experiment that compares generic, metadata-only, and context-aware governance rules for WhatsApp groups.
 
-Task: Provide exactly eight governance rules that would be suitable for a WhatsApp group categorised as "${groupType}". Each rule must be a single, self-contained statement (one or two short sentences) describing the expectation or restriction. For each rule, also provide a short "reason" sentence.
+Task: Provide exactly six governance rules that would be suitable for a WhatsApp group categorised as "${groupType}". Each rule must be a single, self-contained statement (one or two short sentences) describing the expectation or restriction. For each rule, also provide a short "reason" sentence.
 
 Requirements:
 - Balance prescriptive guidance (what members should do) and restrictive guidance (what members must avoid).
@@ -127,7 +127,7 @@ function buildContextualPrompt({ groupType, stats, messages }) {
     ? `- Older messages trimmed to meet token budget: ${stats.trimmedMessages}\n- Approximate characters sent: ${stats.approxChars}`
     : "- No trimming required for token budget";
 
-  return `You are assisting with an experiment comparing generic versus context-aware governance rules for WhatsApp groups.
+  return `You are assisting with an experiment comparing generic, metadata-only, and context-aware governance rules for WhatsApp groups.
 
 Context summary:
 - Group type: ${groupType}
@@ -141,7 +141,7 @@ Context summary:
 Below is a transcript excerpt containing the most recent ${messages.length} rows from the selected window. Each row is JSON with timestamp, sender, mediaType (text|image|video|audio|document|link|system), and content (redacted on client when needed). Use it to understand recurring topics, conflicts, and norms.
 ${messagesBlock}
 
-Task: Create exactly eight governance rules tailored to the observed behaviours. Express each rule as a single, self-contained statement (one or two short sentences) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
+Task: Create exactly six governance rules tailored to the observed behaviours. Express each rule as a single, self-contained statement (one or two short sentences) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
 
 Requirements:
 - Each rule must be grounded in patterns surfaced by the transcript, but do not mention the transcript, chat logs, participants, or the analysis process. Do not write "this group" or otherwise reveal that these rules come from a specific dataset.
@@ -157,6 +157,79 @@ Return JSON only in this schema:
     {
       "text": "Rule statement",
       "reason": "Neutral, general justification grounded in patterns"
+    }
+  ]
+}`;
+}
+
+// Build a metadata-only prompt using the same structure as contextual, but without exposing raw text content.
+function buildMetadataOnlyPrompt({ groupType, stats, messages }) {
+  const lines = messages.map((msg) => {
+    const meta = {
+      timestamp: msg.timestampIso,
+      sender: msg.sender,
+      mediaType: msg.mediaType,
+    };
+
+    // For text-like entries (including links/system/deleted), include only word and character counts.
+    if (msg.mediaType === "text" || msg.mediaType === "link" || msg.mediaType === "system" || msg.mediaType === "deleted") {
+      const words = countWords(msg.raw);
+      const chars = countCodePoints(msg.raw);
+      meta.content = { words, chars };
+    } else if (msg.mediaType === "image" || msg.mediaType === "video" || msg.mediaType === "audio" || msg.mediaType === "document") {
+      const filename = extractFilename(msg.raw);
+      meta.content = filename ? { mediaType: msg.mediaType, filename } : { mediaType: msg.mediaType };
+    } else {
+      // Fallback: do not expose text, still provide counts only.
+      meta.content = { words: countWords(msg.raw), chars: countCodePoints(msg.raw) };
+    }
+
+    return JSON.stringify(meta);
+  });
+
+  const messagesBlock = lines.join("\n");
+
+  const participantLines = stats.topParticipants
+    .map((entry) => `- ${entry.name}: ${entry.count} messages`)
+    .join("\n");
+
+  const mediaBreakdown = Object.entries(stats.mediaCounts)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(", ");
+
+  const trimmingNote = stats.trimmedMessages > 0
+    ? `- Older messages trimmed to meet token budget: ${stats.trimmedMessages}\n- Approximate characters sent: ${stats.approxChars}`
+    : "- No trimming required for token budget";
+
+  return `You are assisting with an experiment comparing generic, metadata-only, and context-aware governance rules for WhatsApp groups.
+
+Context summary (no message content provided):
+- Group type: ${groupType}
+- Observation window: ${stats.windowStart} to ${stats.windowEnd}
+- Total messages analysed: ${stats.totalMessages}
+- Participants observed (${stats.topParticipants.length} of ${stats.distinctParticipants}):\n${participantLines}
+- Media breakdown: ${mediaBreakdown}
+- Notable activity notes: ${stats.activityNotes}
+- Token budget note:\n${trimmingNote}
+
+Below is a transcript excerpt where each row is JSON with timestamp, sender, mediaType, and a content object that contains only metadata (word and character counts for text/link/system/deleted messages; and mediaType plus filename when available for media messages). No raw message text or URLs are included.
+${messagesBlock}
+
+Task: Create exactly six governance rules based only on these metadata signals (e.g., message volume, timing, participation, media types). Express each rule as a single, self-contained statement (one or two short sentences) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
+
+Requirements:
+- Do not infer or reference any specific message content, quotes, or topics. Base rules solely on activity patterns and metadata.
+- Mix prescriptive and restrictive guidance.
+- Keep the tone constructive and neutral; avoid naming individuals or exposing any personal data.
+- Reasons should be phrased in neutral general terms and be comparable in tone and abstraction to the other variants.
+- Avoid numbering, bullet symbols, or extra commentary.
+
+Return JSON only in this schema:
+{
+  "rules": [
+    {
+      "text": "Rule statement",
+      "reason": "Neutral, general justification grounded in metadata"
     }
   ]
 }`;
@@ -716,6 +789,48 @@ function parseRules(rawText) {
   }
 }
 
+// Unicode-aware character counting (code points) to support UTF-8 and Indic scripts.
+function countCodePoints(text) {
+  if (!text) return 0;
+  try {
+    if (typeof Intl !== "undefined" && typeof Intl.Segmenter === "function") {
+      const seg = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+      let count = 0;
+      for (const _ of seg.segment(text)) count += 1;
+      return count;
+    }
+  } catch {}
+  return Array.from(text).length;
+}
+
+// Word counting with Intl.Segmenter when available; falls back to a Unicode-aware split.
+function countWords(text) {
+  if (!text) return 0;
+  try {
+    if (typeof Intl !== "undefined" && typeof Intl.Segmenter === "function") {
+      const seg = new Intl.Segmenter(undefined, { granularity: "word" });
+      let count = 0;
+      for (const part of seg.segment(text)) {
+        if (part.isWordLike) count += 1;
+      }
+      return count;
+    }
+  } catch {}
+  // Fallback: split on whitespace, Unicode-aware
+  return (String(text).trim().match(/[^\s]+/gu) || []).length;
+}
+
+// Best-effort filename extraction from message text for media lines
+function extractFilename(text) {
+  if (!text) return undefined;
+  const s = String(text);
+  const wa = s.match(/\b(?:IMG|VID|AUD|DOC|PTT)-\d{8}-WA\d+\.(?:jpe?g|png|gif|webp|heic|heif|mp4|mov|3gp|m4a|opus|pdf|docx?|xlsx?|pptx?)\b/i);
+  if (wa) return wa[0];
+  const any = s.match(/([\w\s()\-\[\]{}]+\.(?:jpe?g|png|gif|webp|heic|heif|mp4|mov|3gp|m4a|mp3|opus|wav|pdf|docx?|xlsx?|pptx?|zip|rar|7z|txt|apk|csv))/i);
+  if (any) return any[1];
+  return undefined;
+}
+
 function shuffle(array) {
   const copy = [...array];
   for (let i = copy.length - 1; i > 0; i -= 1) {
@@ -1052,10 +1167,12 @@ generateBtn.addEventListener("click", async () => {
   try {
     const genericPrompt = GENERIC_PROMPT_TEMPLATE({ groupType });
     const contextualPrompt = buildContextualPrompt({ groupType, stats, messages: contextualWindow });
+    const metadataPrompt = buildMetadataOnlyPrompt({ groupType, stats, messages: contextualWindow });
 
-    const [genericRaw, contextualRaw] = await Promise.all([
+    const [genericRaw, contextualRaw, metadataRaw] = await Promise.all([
       callGemini({ prompt: genericPrompt }),
       callGemini({ prompt: contextualPrompt }),
+      callGemini({ prompt: metadataPrompt }),
     ]);
 
     const genericRules = parseRules(genericRaw).map((rule, index) => ({
@@ -1070,7 +1187,13 @@ generateBtn.addEventListener("click", async () => {
       source: "contextual",
     }));
 
-    allRules = shuffle([...genericRules, ...contextualRules]);
+    const metadataRules = parseRules(metadataRaw).map((rule, index) => ({
+      ...rule,
+      id: `metadata-${index + 1}`,
+      source: "metadata",
+    }));
+
+    allRules = shuffle([...genericRules, ...contextualRules, ...metadataRules]);
     availableRules = [...allRules];
     rankedRules = [];
     renderRuleLists();
@@ -1117,11 +1240,16 @@ submitRankingsBtn.addEventListener("click", () => {
   const contextualSelections = rankedWithOrder
     .filter((item) => item.rule.source === "contextual")
     .map((item) => `#${item.rank}`);
+  const metadataSelections = rankedWithOrder
+    .filter((item) => item.rule.source === "metadata")
+    .map((item) => `#${item.rank}`);
 
   const genericCount = genericSelections.length;
   const contextualCount = contextualSelections.length;
+  const metadataCount = metadataSelections.length;
   const genericProportion = ((genericCount / totalRanked) * 100).toFixed(1);
   const contextualProportion = ((contextualCount / totalRanked) * 100).toFixed(1);
+  const metadataProportion = ((metadataCount / totalRanked) * 100).toFixed(1);
 
   rankingSummary.innerHTML = "";
 
@@ -1141,19 +1269,27 @@ submitRankingsBtn.addEventListener("click", () => {
   const contextualSelectionsLine = document.createElement("p");
   contextualSelectionsLine.textContent = `Contextual selections: ${contextualSelections.length ? contextualSelections.join(", ") : "None"}`;
 
+  const metadataSelectionsLine = document.createElement("p");
+  metadataSelectionsLine.textContent = `Metadata-only selections: ${metadataSelections.length ? metadataSelections.join(", ") : "None"}`;
+
   const genericLine = document.createElement("p");
   genericLine.textContent = `Generic rules selected: ${genericCount}/${totalRanked} (${genericProportion}%)`;
 
   const contextualLine = document.createElement("p");
   contextualLine.textContent = `Contextual rules selected: ${contextualCount}/${totalRanked} (${contextualProportion}%)`;
 
+  const metadataLine = document.createElement("p");
+  metadataLine.textContent = `Metadata-only rules selected: ${metadataCount}/${totalRanked} (${metadataProportion}%)`;
+
   rankingSummary.append(
     heading,
     list,
     genericSelectionsLine,
     contextualSelectionsLine,
+    metadataSelectionsLine,
     genericLine,
     contextualLine,
+    metadataLine,
   );
   rankingSummary.hidden = false;
 });
