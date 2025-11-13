@@ -46,7 +46,7 @@ function setLoadingState(state) {
       loadingSpinner.style.display = "";
     }
     if (loadingText) {
-      loadingText.textContent = "Suggesting some rules...";
+      loadingText.textContent = "Please wait for 1 minute...";
     }
     loadingBox.hidden = false;
     loadingBox.dataset.state = "loading";
@@ -86,15 +86,15 @@ rankedList.classList.add("empty");
 availableList.classList.add("empty");
 const initialDropZoneMarkup = dropZone.innerHTML;
 
-const GENERIC_PROMPT_TEMPLATE = ({ groupType }) => `You are assisting with an experiment that compares generic, metadata-only, and context-aware governance rules for WhatsApp groups.
+const GENERIC_PROMPT_TEMPLATE = ({ groupType }) => `You are assisting with the generation of governance guidelined for WhatsApp groups.
 
-Task: Provide exactly six governance rules that would be suitable for a WhatsApp group categorised as "${groupType}". Each rule must be a single, self-contained statement (one or two short sentences) describing the expectation or restriction. For each rule, also provide a short "reason" sentence.
+Task: Provide exactly six governance guidelines that would be suitable for a WhatsApp group categorised as "${groupType}". Each rule must be a single, self-contained statement (one short self-contained sentence) describing the expectation or restriction. For each rule, also provide a short "reason" sentence.
 
 Requirements:
 - Balance prescriptive guidance (what members should do) and restrictive guidance (what members must avoid).
-- Focus on broadly applicable group norms without referencing any transcript, participant, or analysis process.
-- For each rule include a neutral, general "reason" that explains the benefit of the rule without implying knowledge of any specific group, transcript, or participants.
-- Keep tone neutral and comparable in abstraction level to the context-aware variant (i.e., reasons should read like universal justifications, not case-specific commentary).
+- Focus on broadly applicable group norms that you think would be applicable for "${groupType}" type of groups in India, from your own prior knowledge.
+- For each rule include a neutral, general "reason" that explains the benefit of the rule without implying knowledge of any specific or anedotal knowledge of any particular group, transcript, or participants.
+- Keep tone neutral and reasoning abstract (i.e., reasons should read like universal justifications, not case-specific commentary).
 - Keep each statement concise and actionable; avoid duplicates and numbering.
 
 Return JSON only in this schema:
@@ -128,7 +128,7 @@ function buildContextualPrompt({ groupType, stats, messages }) {
     ? `- Older messages trimmed to meet token budget: ${stats.trimmedMessages}\n- Approximate characters sent: ${stats.approxChars}`
     : "- No trimming required for token budget";
 
-  return `You are assisting with an experiment comparing generic, metadata-only, and context-aware governance rules for WhatsApp groups.
+  return `You are assisting with the generation of governance guidelined for WhatsApp groups.
 
 Context summary:
 - Group type: ${groupType}
@@ -142,12 +142,12 @@ Context summary:
 Below is a transcript excerpt containing the most recent ${messages.length} rows from the selected window. Each row is JSON with timestamp, sender, mediaType (text|image|video|audio|document|link|system), and content (redacted on client when needed). Use it to understand recurring topics, conflicts, and norms.
 ${messagesBlock}
 
-Task: Create exactly six governance rules tailored to the observed behaviours. Express each rule as a single, self-contained statement (one or two short sentences) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
+Task: Create exactly six governance rules tailored to the observed behaviours. Express each rule as a single, self-contained statement (one short self-contained sentence) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
 
 Requirements:
 - Each rule must be grounded in patterns surfaced by the transcript, but do not mention the transcript, chat logs, participants, or the analysis process. Do not write "this group" or otherwise reveal that these rules come from a specific dataset.
 - Mix prescriptive and restrictive guidance.
-- Reference specific behaviours only when they appear in the excerpt (e.g., late-night forwards, media flooding, off-topic promotions), but phrase the accompanying "reason" in neutral, general terms (e.g., "to reduce late-night disruptions") rather than explicit references to the observed messages (e.g., not "because there were many late-night forwards here").
+- Reference specific behaviours only when they appear in the excerpt, but phrase the accompanying "reason" in neutral, general and abstract justification rather than explicit references to the observed messages.
 - Keep the tone constructive and neutral; avoid naming individuals or exposing personal data.
 - Keep reasons comparable in tone and level of abstraction to the generic variant so that the two sets can be compared fairly.
 - Avoid numbering, bullet symbols, or extra commentary.
@@ -202,7 +202,7 @@ function buildMetadataOnlyPrompt({ groupType, stats, messages }) {
     ? `- Older messages trimmed to meet token budget: ${stats.trimmedMessages}\n- Approximate characters sent: ${stats.approxChars}`
     : "- No trimming required for token budget";
 
-  return `You are assisting with an experiment comparing generic, metadata-only, and context-aware governance rules for WhatsApp groups.
+  return `You are assisting with the generation of governance guidelined for WhatsApp groups.
 
 Context summary (no message content provided):
 - Group type: ${groupType}
@@ -216,7 +216,7 @@ Context summary (no message content provided):
 Below is a transcript excerpt where each row is JSON with timestamp, sender, mediaType, and a content object that contains only metadata (word and character counts for text/link/system/deleted messages; and mediaType plus filename when available for media messages). No raw message text or URLs are included.
 ${messagesBlock}
 
-Task: Create exactly six governance rules based only on these metadata signals (e.g., message volume, timing, participation, media types). Express each rule as a single, self-contained statement (one or two short sentences) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
+Task: Create exactly six governance rules based only on these metadata signals that you think are the most relevant or important. Express each rule as a single, self-contained statement (one short self-contained sentence) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
 
 Requirements:
 - Do not infer or reference any specific message content, quotes, or topics. Base rules solely on activity patterns and metadata.
@@ -761,7 +761,7 @@ function buildMergePrompt(rules) {
   const items = rules.map(r => ({ id: r.id, source: r.source, text: r.text, reason: r.reason || "" }));
   const payloadLines = items.map(obj => JSON.stringify(obj)).join("\n");
 
-  return `You will be given a list of governance rules for a WhatsApp group that were generated by different methods (generic, metadata-only, context-aware). Some rules may be near-duplicates (paraphrases or minor wording changes) while others are distinct.
+  return `You will be given a list of governance rules for a real Indian WhatsApp group generated from 3 different context types (this isn't important. Just assume these are 3 different sources). Some rules may be near-duplicates (paraphrases or minor wording changes) while others are distinct.
 
 Goal: Merge near-similar rules so that only unique rules remain.
 
