@@ -95,7 +95,7 @@ Task: Provide exactly six governance guidelines that would be suitable for a Wha
 
 Requirements:
 - Balance prescriptive guidance (what members should do) and restrictive guidance (what members must avoid).
-- Focus on broadly applicable group norms that you think would be applicable for "${groupType}" type of groups in India, from your own prior knowledge.
+- Focus on broadly applicable group norms that you think would be applicable for "${groupType}" type, from your own prior knowledge.
 - For each rule include a neutral, general "reason" that explains the benefit of the rule without implying knowledge of any specific or anedotal knowledge of any particular group, transcript, or participants.
 - Keep tone neutral and reasoning abstract (i.e., reasons should read like universal justifications, not case-specific commentary).
 - Keep each statement concise and actionable; avoid duplicates and numbering.
@@ -142,10 +142,10 @@ Context summary:
 - Notable activity notes: ${stats.activityNotes}
 - Token budget note:\n${trimmingNote}
 
-Below is a transcript excerpt containing the most recent ${messages.length} rows from the selected window. Each row is JSON with timestamp, sender, mediaType (text|image|video|audio|document|link|system), and content (redacted on client when needed). Use it to understand recurring topics, conflicts, and norms.
+Below is a transcript excerpt containing the most recent ${messages.length} rows from the selected window. Each row is JSON with timestamp, sender, mediaType (text|image|video|audio|document|link|system), and content. Use it extensively to understand recurring topics, conflicts, and norms.
 ${messagesBlock}
 
-Task: Create exactly six governance rules tailored to the observed behaviours. Express each rule as a single, self-contained statement (one short self-contained sentence) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
+Task: Create exactly six different governance rules tailored to the observed behaviours. Express each rule as a single, self-contained statement (one short self-contained sentence) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
 
 Requirements:
 - Each rule must be grounded in patterns surfaced by the transcript, but do not mention the transcript, chat logs, participants, or the analysis process. Do not write "this group" or otherwise reveal that these rules come from a specific dataset.
@@ -764,13 +764,13 @@ function buildMergePrompt(rules) {
   const items = rules.map(r => ({ id: r.id, source: r.source, text: r.text, reason: r.reason || "" }));
   const payloadLines = items.map(obj => JSON.stringify(obj)).join("\n");
 
-  return `You will be given a list of governance rules for a real Indian WhatsApp group generated from 3 different context types (this isn't important. Just assume these are 3 different sources). Some rules may be near-duplicates (paraphrases or minor wording changes) while others are distinct.
+  return `You will be given a list of governance rules for a real WhatsApp group generated from 3 different context types (Just assume these are 3 different sources). Some rules may be near-duplicates (paraphrases or minor wording changes) while others are distinct.
 
 Goal: Merge near-similar rules so that only unique rules remain.
 
 Guidance for "near-similar":
-- Consider rules near-similar if they enforce the same expectation or restriction with only phrasing/synonym changes, or minor scope/qualifier differences that do not materially change the meaning.
-- Do not merge if a rule adds a substantive new condition, targets a different behavior (e.g., promotions vs. off-topic vs. late-night messages), or contradicts another.
+- Consider rules near-similar if they enforce the exact expectation or restriction with only phrasing/synonym changes, or trivial scope/qualifier differences that do not materially change the meaning.
+- Do not merge if a rule adds a substantive new condition, targets a different behavior (e.g., promotions vs. off-topic vs. late-night messages), contradicts another or if they are a different rule altogether albeit for the same intended behavior.
 - Prefer the clearest, most concise wording as the canonical text.
 - Provide a single short, neutral reason for each merged rule that stays comparable in tone to the originals.
 
