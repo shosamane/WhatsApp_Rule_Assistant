@@ -1411,6 +1411,51 @@ submitRankingsBtn.addEventListener("click", () => {
   } catch (e) {
     console.error("Failed to build merged detail breakdown", e);
   }
+
+  // Print all merged rules with their originating rules and counts, regardless of ranking
+  try {
+    const uniqCount = allRules.length;
+    const origCount = originalsById.size; // expected 18
+    const mergedAway = Math.max(0, origCount - uniqCount);
+
+    const allHeading = document.createElement("p");
+    const strong3 = document.createElement("strong");
+    strong3.textContent = "Merged rules (all)";
+    allHeading.appendChild(strong3);
+    rankingSummary.append(allHeading);
+
+    const statsLine = document.createElement("p");
+    statsLine.textContent = `Original rules: ${origCount}. Unique after merge: ${uniqCount}. Total merged: ${mergedAway}.`;
+    rankingSummary.append(statsLine);
+
+    allRules.forEach((rule, idx) => {
+      const block = document.createElement("div");
+      const title = document.createElement("p");
+      const reason = rule.reason ? ` (Reason: ${rule.reason})` : "";
+      title.textContent = `${idx + 1}. ${rule.text}${reason}`;
+      block.appendChild(title);
+
+      if (Array.isArray(rule.origIds) && rule.origIds.length) {
+        const ul = document.createElement("ul");
+        rule.origIds.forEach((oid) => {
+          const li = document.createElement("li");
+          const orig = originalsById.get(oid);
+          if (orig) {
+            const parts = [`[${orig.source}]`, orig.text];
+            if (orig.reason) parts.push(`— ${orig.reason}`);
+            li.textContent = parts.join(" ");
+          } else {
+            li.textContent = `${oid} (original not available)`;
+          }
+          ul.appendChild(li);
+        });
+        block.appendChild(ul);
+      }
+      rankingSummary.append(block);
+    });
+  } catch (e) {
+    console.error("Failed to build merged all-rules list", e);
+  }
 });
 
 updateGenerateButtonState();
