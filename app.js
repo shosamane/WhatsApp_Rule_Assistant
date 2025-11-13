@@ -68,7 +68,7 @@ function setLoadingState(state) {
       if (loadingBox.dataset.state === "ready") {
         setLoadingState("idle");
       }
-    }, 2500);
+    }, 1200);
     return;
   }
 
@@ -920,6 +920,11 @@ function renderRuleLists() {
   rankingPanel.hidden = false;
   rankingError.textContent = "";
   clearRankingSummary();
+
+  // If we were still showing a loading spinner, flip the message immediately
+  if (loadingBox && loadingBox.dataset && loadingBox.dataset.state === "loading") {
+    setLoadingState("ready");
+  }
 
   if (rankingNote) {
     if (allRules.length) {
