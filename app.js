@@ -24,6 +24,8 @@ let allRules = [];
 let availableRules = [];
 let rankedRules = [];
 let loadingResetTimer = null;
+// Map of original pre-merge rules by id for summary introspection
+let originalsById = new Map();
 
 const MAX_SELECTED_RULES = 7;
 const MAX_CONTEXT_CHARS = 300000;
@@ -1263,6 +1265,7 @@ generateBtn.addEventListener("click", async () => {
     }));
 
     const originals = [...genericRules, ...contextualRules, ...metadataRules];
+    originalsById = new Map(originals.map(r => [r.id, r]));
     // Build id->source index for merged mapping
     const idToSource = new Map(originals.map(r => [r.id, r.source]));
 
@@ -1371,6 +1374,43 @@ submitRankingsBtn.addEventListener("click", () => {
     metadataLine,
   );
   rankingSummary.hidden = false;
+
+  // Detailed breakdown: for each ranked merged rule, show its original rules and their source category
+  try {
+    const detailsHeading = document.createElement("p");
+    const strong2 = document.createElement("strong");
+    strong2.textContent = "Merged rule breakdown";
+    detailsHeading.appendChild(strong2);
+    rankingSummary.append(detailsHeading);
+
+    rankedWithOrder.forEach((item) => {
+      const { rule, rank } = item;
+      const wrapper = document.createElement("div");
+      const title = document.createElement("p");
+      title.textContent = `#${rank} — ${rule.text}`;
+      wrapper.appendChild(title);
+
+      if (Array.isArray(rule.origIds) && rule.origIds.length) {
+        const ul = document.createElement("ul");
+        rule.origIds.forEach((oid) => {
+          const li = document.createElement("li");
+          const orig = originalsById.get(oid);
+          if (orig) {
+            const parts = [`[${orig.source}]`, orig.text];
+            if (orig.reason) parts.push(`— ${orig.reason}`);
+            li.textContent = parts.join(" ");
+          } else {
+            li.textContent = `${oid} (original not available)`;
+          }
+          ul.appendChild(li);
+        });
+        wrapper.appendChild(ul);
+      }
+      rankingSummary.append(wrapper);
+    });
+  } catch (e) {
+    console.error("Failed to build merged detail breakdown", e);
+  }
 });
 
 updateGenerateButtonState();
