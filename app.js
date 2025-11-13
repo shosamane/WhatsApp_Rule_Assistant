@@ -3,6 +3,7 @@ const fileInput = document.getElementById("chat-folder");
 const zipInput = document.getElementById("chat-zip");
 const fileStatus = document.getElementById("file-status");
 const groupTypeSelect = document.getElementById("group-type");
+const groupTypeOtherInput = document.getElementById("group-type-other");
 const generateBtn = document.getElementById("generate-btn");
 const loadingBox = document.getElementById("loading");
 const errorBox = document.getElementById("generation-errors");
@@ -921,9 +922,9 @@ function renderRuleLists() {
   rankingError.textContent = "";
   clearRankingSummary();
 
-  // If we were still showing a loading spinner, flip the message immediately
+  // If we were still showing a loading spinner, hide it once rules are visible
   if (loadingBox && loadingBox.dataset && loadingBox.dataset.state === "loading") {
-    setLoadingState("ready");
+    setLoadingState("idle");
   }
 
   if (rankingNote) {
@@ -1114,7 +1115,9 @@ function moveRuleToAvailable(ruleId, targetIndex) {
 
 function updateGenerateButtonState() {
   const hasFile = Boolean(chatFile);
-  const hasGroupType = Boolean(groupTypeSelect.value);
+  const selected = groupTypeSelect.value;
+  const otherOk = selected === "Other" ? Boolean(groupTypeOtherInput && groupTypeOtherInput.value.trim()) : true;
+  const hasGroupType = Boolean(selected) && otherOk;
   generateBtn.disabled = !(hasFile && hasGroupType && parsedMessages.length);
 }
 
@@ -1154,7 +1157,28 @@ if (zipInput) {
   });
 }
 
-groupTypeSelect.addEventListener("change", updateGenerateButtonState);
+function refreshGroupTypeOtherVisibility() {
+  const showOther = groupTypeSelect.value === "Other";
+  const field = document.getElementById("group-type-other-field");
+  if (field) {
+    field.hidden = !showOther;
+  }
+  if (groupTypeOtherInput) {
+    groupTypeOtherInput.disabled = !showOther;
+    if (showOther) {
+      // Focus shortly to avoid blocking layout thrash
+      setTimeout(() => groupTypeOtherInput.focus(), 0);
+    }
+  }
+  updateGenerateButtonState();
+}
+
+groupTypeSelect.addEventListener("change", refreshGroupTypeOtherVisibility);
+if (groupTypeOtherInput) {
+  groupTypeOtherInput.addEventListener("input", updateGenerateButtonState);
+}
+// Initialize visibility on load
+refreshGroupTypeOtherVisibility();
 
 async function assignChatFile(fileList) {
   if (!fileList.length) {
@@ -1230,7 +1254,8 @@ generateBtn.addEventListener("click", async () => {
     return;
   }
 
-  const groupType = groupTypeSelect.value;
+  const selectedType = groupTypeSelect.value;
+  const groupType = selectedType === "Other" && groupTypeOtherInput ? (groupTypeOtherInput.value.trim() || "Other") : selectedType;
 
   errorBox.textContent = "";
   setLoadingState("loading");
@@ -1283,7 +1308,7 @@ generateBtn.addEventListener("click", async () => {
     availableRules = [...allRules];
     rankedRules = [];
     renderRuleLists();
-    setLoadingState("ready");
+    setLoadingState("idle");
   } catch (error) {
     console.error(error);
     errorBox.textContent = error.message;
@@ -1380,42 +1405,7 @@ submitRankingsBtn.addEventListener("click", () => {
   );
   rankingSummary.hidden = false;
 
-  // Detailed breakdown: for each ranked merged rule, show its original rules and their source category
-  try {
-    const detailsHeading = document.createElement("p");
-    const strong2 = document.createElement("strong");
-    strong2.textContent = "Merged rule breakdown";
-    detailsHeading.appendChild(strong2);
-    rankingSummary.append(detailsHeading);
-
-    rankedWithOrder.forEach((item) => {
-      const { rule, rank } = item;
-      const wrapper = document.createElement("div");
-      const title = document.createElement("p");
-      title.textContent = `#${rank} — ${rule.text}`;
-      wrapper.appendChild(title);
-
-      if (Array.isArray(rule.origIds) && rule.origIds.length) {
-        const ul = document.createElement("ul");
-        rule.origIds.forEach((oid) => {
-          const li = document.createElement("li");
-          const orig = originalsById.get(oid);
-          if (orig) {
-            const parts = [`[${orig.source}]`, orig.text];
-            if (orig.reason) parts.push(`— ${orig.reason}`);
-            li.textContent = parts.join(" ");
-          } else {
-            li.textContent = `${oid} (original not available)`;
-          }
-          ul.appendChild(li);
-        });
-        wrapper.appendChild(ul);
-      }
-      rankingSummary.append(wrapper);
-    });
-  } catch (e) {
-    console.error("Failed to build merged detail breakdown", e);
-  }
+  // Merged rules (all) section is rendered below; ranked-only breakdown removed per request
 
   // Print all merged rules with their originating rules and counts, regardless of ranking
   try {
