@@ -27,6 +27,7 @@ let rankedRules = [];
 let loadingResetTimer = null;
 // Map of original pre-merge rules by id for summary introspection
 let originalsById = new Map();
+let meetsActivityCriteria = true;
 
 const MAX_SELECTED_RULES = 7;
 const MAX_CONTEXT_CHARS = 300000;
@@ -462,6 +463,46 @@ function computeContextWindow(messages) {
   return lastThreeHundred;
 }
 
+// Check transcript eligibility based on activity criteria
+function checkTranscriptEligibility(messages) {
+  const result = {
+    ok: true,
+    spanDays: 0,
+    totalMessages: messages.length,
+    uniqueParticipants: 0,
+    last60Avg: 0,
+    last60Count: 0,
+  };
+
+  if (!messages.length) {
+    result.ok = false;
+    return result;
+  }
+
+  const msDay = 24 * 60 * 60 * 1000;
+  const earliest = messages[0].timestamp;
+  const latest = messages[messages.length - 1].timestamp;
+  result.spanDays = Math.floor((latest - earliest) / msDay);
+
+  const last60Start = new Date(latest.getTime() - 60 * msDay);
+  const last60 = messages.filter((m) => m.timestamp >= last60Start);
+  result.last60Count = last60.length;
+  result.last60Avg = last60.length / 60;
+
+  const unique = new Set();
+  for (const m of messages) {
+    if (m.sender && m.sender !== "(system)") unique.add(m.sender);
+  }
+  result.uniqueParticipants = unique.size;
+
+  const spanOk = result.spanDays >= 90;
+  const totalOk = result.totalMessages >= 300;
+  const uniqueOk = result.uniqueParticipants >= 3;
+  const avgOk = result.last60Avg >= 5;
+  result.ok = spanOk && totalOk && uniqueOk && avgOk;
+  return result;
+}
+
 function enforceCharacterBudget(messages, maxChars) {
   if (!messages.length) {
     return {
@@ -637,6 +678,22 @@ async function loadChatFile(chat, displayLabel) {
       approxChars: budget.approxChars,
     });
     dropZone.dataset.stats = JSON.stringify(stats);
+
+    // Eligibility check using full transcript (not just context window)
+    const elig = checkTranscriptEligibility(parsedMessages);
+    meetsActivityCriteria = elig.ok;
+    if (!elig.ok) {
+      fileStatus.style.color = "var(--error)";
+      fileStatus.textContent = [
+        "This transcript doesn’t meet the minimum activity criteria.",
+        "Upload a chat that:",
+        "- spans at least 90 days (current: " + elig.spanDays + " days)",
+        "- has at least 300 total messages (current: " + elig.totalMessages + ")",
+        "- has at least 3 unique participants (current: " + elig.uniqueParticipants + ")",
+        "- averages at least 5 messages/day over the last 60 days (current: " + elig.last60Count + "/60 = " + elig.last60Avg.toFixed(2) + ")",
+      ].join(" \n");
+    }
+
     return true;
   } catch (error) {
     console.error("Failed to read chat file", error);
@@ -645,6 +702,7 @@ async function loadChatFile(chat, displayLabel) {
     resetDropZone();
     parsedMessages = [];
     contextualWindow = [];
+    meetsActivityCriteria = false;
     return false;
   }
 }
@@ -656,6 +714,7 @@ function resetDropZone() {
   dropZone.tabIndex = 0;
   dropZone.style.pointerEvents = "";
   delete dropZone.dataset.stats;
+  meetsActivityCriteria = true;
 }
 
 function clearRulesUI() {
@@ -1118,7 +1177,7 @@ function updateGenerateButtonState() {
   const selected = groupTypeSelect.value;
   const otherOk = selected === "Other" ? Boolean(groupTypeOtherInput && groupTypeOtherInput.value.trim()) : true;
   const hasGroupType = Boolean(selected) && otherOk;
-  generateBtn.disabled = !(hasFile && hasGroupType && parsedMessages.length);
+  generateBtn.disabled = !(hasFile && hasGroupType && parsedMessages.length && meetsActivityCriteria);
 }
 
 dropZone.addEventListener("dragover", (event) => {

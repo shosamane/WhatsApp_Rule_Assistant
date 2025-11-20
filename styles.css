@@ -350,6 +350,7 @@ input:focus {
   font-size: 0.95rem;
   color: var(--muted);
   word-break: break-word;
+  white-space: pre-wrap;
 }
 
 .tip {

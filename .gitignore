@@ -16,3 +16,4 @@ node_modules/
 .vscode/
 WhatsApp Chat with Family.txt
 _chat.txt
+*.txt
