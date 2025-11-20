@@ -470,8 +470,12 @@ function checkTranscriptEligibility(messages) {
     spanDays: 0,
     totalMessages: messages.length,
     uniqueParticipants: 0,
-    last60Avg: 0,
-    last60Count: 0,
+    last30Count: 0,
+    // individual checks
+    spanOk: false,
+    totalOk: false,
+    uniqueOk: false,
+    recentOk: false,
   };
 
   if (!messages.length) {
@@ -484,10 +488,9 @@ function checkTranscriptEligibility(messages) {
   const latest = messages[messages.length - 1].timestamp;
   result.spanDays = Math.floor((latest - earliest) / msDay);
 
-  const last60Start = new Date(latest.getTime() - 60 * msDay);
-  const last60 = messages.filter((m) => m.timestamp >= last60Start);
-  result.last60Count = last60.length;
-  result.last60Avg = last60.length / 60;
+  const last30Start = new Date(latest.getTime() - 30 * msDay);
+  const last30 = messages.filter((m) => m.timestamp >= last30Start);
+  result.last30Count = last30.length;
 
   const unique = new Set();
   for (const m of messages) {
@@ -495,11 +498,12 @@ function checkTranscriptEligibility(messages) {
   }
   result.uniqueParticipants = unique.size;
 
-  const spanOk = result.spanDays >= 90;
-  const totalOk = result.totalMessages >= 300;
-  const uniqueOk = result.uniqueParticipants >= 3;
-  const avgOk = result.last60Avg >= 5;
-  result.ok = spanOk && totalOk && uniqueOk && avgOk;
+  // Thresholds (updated): span >= 90 days; total >= 500; unique >= 3; last 30 days count >= 50
+  result.spanOk = result.spanDays >= 90;
+  result.totalOk = result.totalMessages >= 500;
+  result.uniqueOk = result.uniqueParticipants >= 3;
+  result.recentOk = result.last30Count >= 50;
+  result.ok = result.spanOk && result.totalOk && result.uniqueOk && result.recentOk;
   return result;
 }
 
@@ -683,14 +687,17 @@ async function loadChatFile(chat, displayLabel) {
     const elig = checkTranscriptEligibility(parsedMessages);
     meetsActivityCriteria = elig.ok;
     if (!elig.ok) {
+      const bullets = [];
+      if (!elig.spanOk) bullets.push(`- spans at least 90 days (current: ${elig.spanDays} days)`);
+      if (!elig.totalOk) bullets.push(`- has at least 500 total messages (current: ${elig.totalMessages})`);
+      if (!elig.uniqueOk) bullets.push(`- has at least 3 unique participants (current: ${elig.uniqueParticipants})`);
+      if (!elig.recentOk) bullets.push(`- has at least 50 messages in the last 30 days (current: ${elig.last30Count})`);
+
       fileStatus.style.color = "var(--error)";
       fileStatus.textContent = [
         "This transcript doesn’t meet the minimum activity criteria.",
         "Upload a chat that:",
-        "- spans at least 90 days (current: " + elig.spanDays + " days)",
-        "- has at least 300 total messages (current: " + elig.totalMessages + ")",
-        "- has at least 3 unique participants (current: " + elig.uniqueParticipants + ")",
-        "- averages at least 5 messages/day over the last 60 days (current: " + elig.last60Count + "/60 = " + elig.last60Avg.toFixed(2) + ")",
+        ...bullets,
       ].join(" \n");
     }
 
