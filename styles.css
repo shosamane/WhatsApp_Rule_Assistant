@@ -31,7 +31,7 @@
 
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg);
   color: var(--text);
   overflow-x: hidden;
@@ -284,7 +284,7 @@ input:focus {
   border-radius: 12px;
   padding: 0.75rem 0.9rem;
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 0.75rem;
   cursor: grab;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -336,6 +336,7 @@ input:focus {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  flex: 1;
 }
 
 .rule-reason {
@@ -344,6 +345,27 @@ input:focus {
   font-size: 0.92rem;
   line-height: 1.35;
   word-break: break-word;
+}
+
+.rule-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-left: 0.25rem;
+}
+
+.rule-action {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  border-radius: 8px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+@media (hover: none) {
+  .rule-card { cursor: default; }
 }
 
 .file-status {

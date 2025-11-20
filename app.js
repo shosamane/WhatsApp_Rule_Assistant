@@ -1,6 +1,7 @@
 const dropZone = document.getElementById("drop-zone");
 const fileInput = document.getElementById("chat-folder");
 const zipInput = document.getElementById("chat-zip");
+const txtInput = document.getElementById("chat-txt");
 const fileStatus = document.getElementById("file-status");
 const groupTypeSelect = document.getElementById("group-type");
 const groupTypeOtherInput = document.getElementById("group-type-other");
@@ -28,6 +29,7 @@ let loadingResetTimer = null;
 // Map of original pre-merge rules by id for summary introspection
 let originalsById = new Map();
 let meetsActivityCriteria = true;
+let wasDragging = false;
 
 const MAX_SELECTED_RULES = 7;
 const MAX_CONTEXT_CHARS = 300000;
@@ -1060,6 +1062,32 @@ function createRuleCard(rule, options) {
 
   card.addEventListener("dragstart", handleDragStart);
   card.addEventListener("dragend", handleDragEnd);
+  card.addEventListener("click", handleCardClick);
+
+  if (isRanked) {
+    const actions = document.createElement("div");
+    actions.className = "rule-actions";
+    const upBtn = document.createElement("button");
+    upBtn.type = "button";
+    upBtn.className = "rule-action rule-action-up";
+    upBtn.setAttribute("aria-label", "Move up");
+    upBtn.textContent = "▲";
+    upBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      moveRankedBy(rule.id, -1);
+    });
+    const downBtn = document.createElement("button");
+    downBtn.type = "button";
+    downBtn.className = "rule-action rule-action-down";
+    downBtn.setAttribute("aria-label", "Move down");
+    downBtn.textContent = "▼";
+    downBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      moveRankedBy(rule.id, +1);
+    });
+    actions.append(upBtn, downBtn);
+    card.appendChild(actions);
+  }
 
   return card;
 }
@@ -1076,11 +1104,40 @@ function handleDragStart(event) {
   requestAnimationFrame(() => {
     card.classList.add("dragging");
   });
+  wasDragging = true;
 }
 
 function handleDragEnd(event) {
   const card = event.currentTarget;
   card.classList.remove("dragging");
+  setTimeout(() => { wasDragging = false; }, 50);
+}
+
+function handleCardClick(event) {
+  if (wasDragging) return;
+  const card = event.currentTarget;
+  const ruleId = card.dataset.ruleId;
+  const list = card.dataset.list;
+  if (!ruleId || !list) return;
+  if (list === "available") {
+    if (rankedRules.length >= MAX_SELECTED_RULES) {
+      rankingError.textContent = `You can rank up to ${MAX_SELECTED_RULES} rules.`;
+      return;
+    }
+    addRuleToRanked(ruleId, rankedRules.length);
+  } else if (list === "ranked") {
+    moveRuleToAvailable(ruleId, availableRules.length);
+  }
+}
+
+function moveRankedBy(ruleId, delta) {
+  const idx = rankedRules.findIndex((r) => r.id === ruleId);
+  if (idx === -1) return;
+  const newIdx = Math.min(Math.max(0, idx + delta), rankedRules.length - 1);
+  if (newIdx === idx) return;
+  const [rule] = rankedRules.splice(idx, 1);
+  rankedRules.splice(newIdx, 0, rule);
+  renderRuleLists();
 }
 
 function handleDragOver(event) {
@@ -1222,6 +1279,12 @@ if (zipInput) {
     assignChatFile(files);
   });
 }
+if (txtInput) {
+  txtInput.addEventListener("change", (event) => {
+    const files = Array.from(event.target.files || []);
+    assignChatFile(files);
+  });
+}
 
 function refreshGroupTypeOtherVisibility() {
   const showOther = groupTypeSelect.value === "Other";
@@ -1278,6 +1341,9 @@ async function assignChatFile(fileList) {
     if (zipInput) {
       zipInput.value = "";
     }
+    if (txtInput) {
+      txtInput.value = "";
+    }
     fileInput.value = "";
     updateGenerateButtonState();
     return;
@@ -1311,6 +1377,9 @@ async function assignChatFile(fileList) {
   fileInput.value = "";
   if (zipInput) {
     zipInput.value = "";
+  }
+  if (txtInput) {
+    txtInput.value = "";
   }
   updateGenerateButtonState();
 }
