@@ -668,7 +668,7 @@ async function loadChatFile(chat, displayLabel) {
     dropZone.classList.add("loaded", "ready");
     dropZone.innerHTML = `
       <p class="dz-instructions"><strong>Chat detected.</strong></p>
-      <p class="dz-hint">Messages parsed: ${messages.length}. Drop another folder or zip to replace it.</p>
+      <p class="dz-hint">Messages parsed: ${messages.length}. Drop another zip or chat .txt to replace it.</p>
     `;
     dropZone.tabIndex = 0;
     dropZone.removeAttribute("aria-hidden");
@@ -719,7 +719,7 @@ async function loadChatFile(chat, displayLabel) {
 function resetDropZone() {
   dropZone.innerHTML = initialDropZoneMarkup;
   dropZone.classList.remove("loaded", "ready");
-  dropZone.setAttribute("aria-label", "Drop WhatsApp export folder or zip here");
+  dropZone.setAttribute("aria-label", "Drop WhatsApp zip or chat .txt here");
   dropZone.tabIndex = 0;
   dropZone.style.pointerEvents = "";
   delete dropZone.dataset.stats;
@@ -1268,10 +1268,12 @@ availableList.addEventListener("dragover", handleDragOver);
 availableList.addEventListener("dragleave", handleDragLeave);
 availableList.addEventListener("drop", handleAvailableDrop);
 
-fileInput.addEventListener("change", (event) => {
-  const files = Array.from(event.target.files || []);
-  assignChatFile(files);
-});
+if (fileInput) {
+  fileInput.addEventListener("change", (event) => {
+    const files = Array.from(event.target.files || []);
+    assignChatFile(files);
+  });
+}
 
 if (zipInput) {
   zipInput.addEventListener("change", (event) => {
@@ -1338,13 +1340,9 @@ async function assignChatFile(fileList) {
       resetDropZone();
     }
 
-    if (zipInput) {
-      zipInput.value = "";
-    }
-    if (txtInput) {
-      txtInput.value = "";
-    }
-    fileInput.value = "";
+    if (zipInput) { zipInput.value = ""; }
+    if (txtInput) { txtInput.value = ""; }
+    if (fileInput) { fileInput.value = ""; }
     updateGenerateButtonState();
     return;
   }
@@ -1374,13 +1372,9 @@ async function assignChatFile(fileList) {
     chatFile = null;
   }
 
-  fileInput.value = "";
-  if (zipInput) {
-    zipInput.value = "";
-  }
-  if (txtInput) {
-    txtInput.value = "";
-  }
+  if (fileInput) { fileInput.value = ""; }
+  if (zipInput) { zipInput.value = ""; }
+  if (txtInput) { txtInput.value = ""; }
   updateGenerateButtonState();
 }
 

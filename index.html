@@ -15,13 +15,9 @@
 
     <section class="panel">
       <h2>1. Provide Chat Export</h2>
-      <div id="drop-zone" class="drop-zone" tabindex="0" aria-label="Drop WhatsApp export folder or zip here">
-        <p class="dz-instructions"><strong>Drop the export folder or zip</strong> or use the pickers below.</p>
-        <p class="dz-hint">The folder or zip must include <code>_chat.txt</code>. Media files are ignored.</p>
-      </div>
-      <div class="picker-row">
-        <label class="picker-label" for="chat-folder">Choose folder:</label>
-        <input id="chat-folder" type="file" webkitdirectory directory />
+      <div id="drop-zone" class="drop-zone" tabindex="0" aria-label="Drop WhatsApp zip or chat .txt here">
+        <p class="dz-instructions"><strong>Drop a zip or chat .txt</strong> or use the pickers below.</p>
+        <p class="dz-hint">Pick a .zip or the chat .txt (usually <code>_chat.txt</code>). Media files are ignored.</p>
       </div>
       <div class="picker-row">
         <label class="picker-label" for="chat-zip">Or choose zip:</label>
@@ -31,7 +27,7 @@
         <label class="picker-label" for="chat-txt">Or choose chat .txt:</label>
         <input id="chat-txt" type="file" accept=".txt" />
       </div>
-      <p class="tip">Tip: On some Android devices, picking directly from Google Drive may fail. If that happens, first download the .zip or chat .txt to your device and then select it from the Files picker.</p>
+      <p class="tip">If Google Drive fails on Android, download the file to your device and pick it from Files.</p>
       <div class="file-status" id="file-status" role="status" aria-live="polite"></div>
     </section>
 
