@@ -1747,6 +1747,7 @@ document.addEventListener('change', (e) => {
         sourceIdLabel.textContent = v === 'research' ? 'Enter your code' : (v === 'prolific' ? 'Enter your Prolific ID' : 'Enter your Clickworker ID');
       }
     }
+    updateStartButtonState();
   }
 });
 
@@ -1764,6 +1765,22 @@ if (startBtn) {
     if (consentPanel) consentPanel.hidden = false;
   });
 }
+
+if (sourceIdInput) {
+  sourceIdInput.addEventListener('input', () => {
+    updateStartButtonState();
+  });
+}
+
+function updateStartButtonState() {
+  if (!startBtn) return;
+  const v = getSelectedSource();
+  const idVal = (sourceIdInput?.value || '').trim();
+  startBtn.disabled = !(v && idVal);
+}
+
+// Initialize disabled state on load
+updateStartButtonState();
 
 if (approveBtn) {
   approveBtn.addEventListener('click', () => {
