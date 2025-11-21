@@ -1764,6 +1764,8 @@ if (startBtn) {
     sourceType = v;
     sourceId = idVal;
     if (landingPanel) landingPanel.hidden = true;
+    const mainHeader = document.getElementById('main-header');
+    if (mainHeader) mainHeader.hidden = false;
     if (instructionsPanel) instructionsPanel.hidden = false;
   });
 }
