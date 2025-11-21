@@ -1793,6 +1793,24 @@ function updateStartButtonState() {
 // Initialize disabled state on load
 updateStartButtonState();
 
+// Initialize page state - ensure only landing panel is visible
+(function initializePageState() {
+  // Hide header initially
+  const mainHeader = document.getElementById('main-header');
+  if (mainHeader) mainHeader.hidden = true;
+
+  // Show only landing panel
+  if (landingPanel) landingPanel.hidden = false;
+  if (instructionsPanel) instructionsPanel.hidden = true;
+  if (uploadPanel) uploadPanel.hidden = true;
+  if (groupPanel) groupPanel.hidden = true;
+  if (generationPanel) generationPanel.hidden = true;
+  if (rankingPanel) rankingPanel.hidden = true;
+
+  // Ensure source-id-field is hidden initially
+  if (sourceIdField) sourceIdField.hidden = true;
+})();
+
 if (approveBtn) {
   approveBtn.addEventListener('click', () => {
     if (!parsedMessages.length || !meetsActivityCriteria) {
