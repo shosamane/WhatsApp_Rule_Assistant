@@ -50,9 +50,160 @@
       <p class="tip">If Google Drive fails on Android, download the file to your device and pick it from Files.</p>
       <div class="file-status" id="file-status" role="status" aria-live="polite"></div>
       <div class="field">
-        <span>Preview (pseudonymized)</span>
+        <span>Below is a snapshot of the anonymized transcript. We do all of the anonymization (removing user names, email IDs, phone numbers and other personal information) on your device. You can send us this anonymized transcript by clicking the button below.</span>
         <div id="transcript-preview" class="transcript-preview" aria-label="Transcript preview" tabindex="0"></div>
       </div>
+
+      <h3 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">About You</h3>
+
+      <label class="field">
+        <span>Age</span>
+        <input id="demo-age" type="number" min="18" max="100" placeholder="Enter your age" />
+      </label>
+
+      <label class="field">
+        <span>Gender</span>
+        <select id="demo-gender">
+          <option value="" selected disabled>Select</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Prefer not to say">Prefer not to say</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>District and State of residence</span>
+        <input id="demo-location" type="text" placeholder="e.g., Bangalore, Karnataka" />
+      </label>
+
+      <label class="field">
+        <span>Primary language(s) you speak</span>
+        <input id="demo-languages" type="text" placeholder="e.g., English, Hindi, Kannada" />
+      </label>
+
+      <label class="field">
+        <span>Education level</span>
+        <select id="demo-education">
+          <option value="" selected disabled>Select your highest education</option>
+          <option value="Below 10th standard">Below 10th standard</option>
+          <option value="10th standard">10th standard</option>
+          <option value="12th standard / PUC">12th standard / PUC</option>
+          <option value="Diploma">Diploma</option>
+          <option value="Bachelor's degree">Bachelor's degree</option>
+          <option value="Master's degree">Master's degree</option>
+          <option value="Doctoral degree (PhD)">Doctoral degree (PhD)</option>
+          <option value="Professional degree (Medical, Law, etc.)">Professional degree (Medical, Law, etc.)</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>How often do you use WhatsApp?</span>
+        <select id="demo-wa-frequency">
+          <option value="" selected disabled>Select</option>
+          <option value="Never">Never</option>
+          <option value="Rarely">Rarely</option>
+          <option value="Sometimes">Sometimes</option>
+          <option value="Often">Often</option>
+          <option value="Daily">Daily</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>How many WhatsApp groups are you currently active in?</span>
+        <select id="demo-wa-groups">
+          <option value="" selected disabled>Select</option>
+          <option value="0">0</option>
+          <option value="1-3">1-3</option>
+          <option value="4-7">4-7</option>
+          <option value="8-15">8-15</option>
+          <option value="16+">16+</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>How many WhatsApp groups do you serve as an admin or moderator?</span>
+        <select id="demo-wa-admin-groups">
+          <option value="" selected disabled>Select</option>
+          <option value="0">0</option>
+          <option value="1-3">1-3</option>
+          <option value="4-7">4-7</option>
+          <option value="8-15">8-15</option>
+          <option value="16+">16+</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>I have experience moderating online communities</span>
+        <select id="demo-moderation-exp">
+          <option value="" selected disabled>Select</option>
+          <option value="Strongly Disagree">Strongly Disagree</option>
+          <option value="Disagree">Disagree</option>
+          <option value="Neutral">Neutral</option>
+          <option value="Agree">Agree</option>
+          <option value="Strongly Agree">Strongly Agree</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>I am familiar with creating group guidelines/rules for WhatsApp</span>
+        <select id="demo-guidelines-familiarity">
+          <option value="" selected disabled>Select</option>
+          <option value="Strongly Disagree">Strongly Disagree</option>
+          <option value="Disagree">Disagree</option>
+          <option value="Neutral">Neutral</option>
+          <option value="Agree">Agree</option>
+          <option value="Strongly Agree">Strongly Agree</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>How long have you been a WhatsApp admin?</span>
+        <select id="demo-admin-duration">
+          <option value="" selected disabled>Select</option>
+          <option value="None">None</option>
+          <option value="Less than 1 year">Less than 1 year</option>
+          <option value="1-3 years">1-3 years</option>
+          <option value="3-5 years">3-5 years</option>
+          <option value="5+ years">5+ years</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>I am confident in my ability to write clear guidelines</span>
+        <select id="demo-writing-confidence">
+          <option value="" selected disabled>Select</option>
+          <option value="Not at all">Not at all</option>
+          <option value="Slightly">Slightly</option>
+          <option value="Moderately">Moderately</option>
+          <option value="Very">Very</option>
+          <option value="Extremely">Extremely</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>I am good at explaining complex policies simply</span>
+        <select id="demo-explanation-skill">
+          <option value="" selected disabled>Select</option>
+          <option value="Not at all">Not at all</option>
+          <option value="Slightly">Slightly</option>
+          <option value="Moderately">Moderately</option>
+          <option value="Very">Very</option>
+          <option value="Extremely">Extremely</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>I prefer to communicate through text rather than voice messages</span>
+        <select id="demo-attention-check">
+          <option value="" selected disabled>Select</option>
+          <option value="Strongly Disagree">Strongly Disagree</option>
+          <option value="Disagree">Disagree</option>
+          <option value="Somewhat Agree">Somewhat Agree</option>
+          <option value="Agree">Agree</option>
+          <option value="Strongly Agree">Strongly Agree</option>
+        </select>
+      </label>
+
       <button id="approve-btn" class="primary" disabled>Approve and Continue</button>
     </section>
 

@@ -32,6 +32,21 @@ const sourceIdField = document.getElementById("source-id-field");
 const sourceIdInput = document.getElementById("source-id");
 const sourceIdLabel = document.getElementById("source-id-label");
 const proceedInstruction = document.getElementById("proceed-instruction");
+// Demographic fields
+const demoAge = document.getElementById("demo-age");
+const demoGender = document.getElementById("demo-gender");
+const demoLocation = document.getElementById("demo-location");
+const demoLanguages = document.getElementById("demo-languages");
+const demoEducation = document.getElementById("demo-education");
+const demoWaFrequency = document.getElementById("demo-wa-frequency");
+const demoWaGroups = document.getElementById("demo-wa-groups");
+const demoWaAdminGroups = document.getElementById("demo-wa-admin-groups");
+const demoModerationExp = document.getElementById("demo-moderation-exp");
+const demoGuidelinesFamiliarity = document.getElementById("demo-guidelines-familiarity");
+const demoAdminDuration = document.getElementById("demo-admin-duration");
+const demoWritingConfidence = document.getElementById("demo-writing-confidence");
+const demoExplanationSkill = document.getElementById("demo-explanation-skill");
+const demoAttentionCheck = document.getElementById("demo-attention-check");
 
 let chatFile = null;
 let parsedMessages = [];
@@ -706,11 +721,7 @@ async function loadChatFile(chat, displayLabel) {
     const budget = enforceCharacterBudget(initialWindow, MAX_CONTEXT_CHARS);
     contextualWindow = budget.retained;
 
-    const trimNote = budget.trimmed > 0
-      ? ` Context window trimmed by ${budget.trimmed} older messages to fit Gemini token limits.`
-      : "";
-
-    fileStatus.textContent = `Parsed ${messages.length} messages from ${displayLabel}. Context window: ${contextualWindow.length} rows.${trimNote}`;
+    fileStatus.textContent = `${messages.length} messages loaded successfully.`;
     fileStatus.style.color = "";
     dropZone.setAttribute("aria-label", `${contextualWindow.length} messages ready`);
     dropZone.classList.add("loaded", "ready");
@@ -767,9 +778,7 @@ async function loadChatFile(chat, displayLabel) {
 
     // Render transcript preview and enable approval if eligible
     renderTranscriptPreview(parsedMessages);
-    if (approveBtn) {
-      approveBtn.disabled = !(meetsActivityCriteria && parsedMessages.length > 0);
-    }
+    updateApproveButtonState();
     return true;
   } catch (error) {
     console.error("Failed to read chat file", error);
@@ -1701,6 +1710,22 @@ function buildSubmissionPayload({ rankedWithOrder, genericSelections, contextual
     sessionId,
     sourceType,
     sourceId,
+    demographics: {
+      age: demoAge?.value || '',
+      gender: demoGender?.value || '',
+      location: demoLocation?.value || '',
+      languages: demoLanguages?.value || '',
+      education: demoEducation?.value || '',
+      whatsappFrequency: demoWaFrequency?.value || '',
+      whatsappGroups: demoWaGroups?.value || '',
+      whatsappAdminGroups: demoWaAdminGroups?.value || '',
+      moderationExperience: demoModerationExp?.value || '',
+      guidelinesFamiliarity: demoGuidelinesFamiliarity?.value || '',
+      adminDuration: demoAdminDuration?.value || '',
+      writingConfidence: demoWritingConfidence?.value || '',
+      explanationSkill: demoExplanationSkill?.value || '',
+      attentionCheck: demoAttentionCheck?.value || '',
+    },
     transcript: transcriptMeta || {},
     groupType: lastGenerated?.groupType || (groupTypeSelect.value || ''),
     stats: lastGenerated?.stats || JSON.parse(dropZone.dataset.stats || '{}'),
@@ -1815,6 +1840,54 @@ function updateStartButtonState() {
 // Initialize disabled state on load
 updateStartButtonState();
 
+// Validate demographic fields
+function validateDemographics() {
+  if (!demoAge || !demoGender || !demoLocation || !demoLanguages || !demoEducation ||
+      !demoWaFrequency || !demoWaGroups || !demoWaAdminGroups || !demoModerationExp ||
+      !demoGuidelinesFamiliarity || !demoAdminDuration || !demoWritingConfidence ||
+      !demoExplanationSkill || !demoAttentionCheck) {
+    return false;
+  }
+
+  const age = demoAge.value.trim();
+  const gender = demoGender.value;
+  const location = demoLocation.value.trim();
+  const languages = demoLanguages.value.trim();
+  const education = demoEducation.value;
+  const waFreq = demoWaFrequency.value;
+  const waGroups = demoWaGroups.value;
+  const waAdminGroups = demoWaAdminGroups.value;
+  const modExp = demoModerationExp.value;
+  const guidelinesFam = demoGuidelinesFamiliarity.value;
+  const adminDur = demoAdminDuration.value;
+  const writingConf = demoWritingConfidence.value;
+  const explainSkill = demoExplanationSkill.value;
+  const attCheck = demoAttentionCheck.value;
+
+  return age && gender && location && languages && education && waFreq &&
+         waGroups && waAdminGroups && modExp && guidelinesFam && adminDur &&
+         writingConf && explainSkill && attCheck;
+}
+
+// Update approve button based on all conditions
+function updateApproveButtonState() {
+  if (!approveBtn) return;
+  const hasChat = meetsActivityCriteria && parsedMessages.length > 0;
+  const hasDemographics = validateDemographics();
+  approveBtn.disabled = !(hasChat && hasDemographics);
+}
+
+// Add event listeners to demographic fields
+[demoAge, demoGender, demoLocation, demoLanguages, demoEducation,
+ demoWaFrequency, demoWaGroups, demoWaAdminGroups, demoModerationExp,
+ demoGuidelinesFamiliarity, demoAdminDuration, demoWritingConfidence,
+ demoExplanationSkill, demoAttentionCheck].forEach(field => {
+  if (field) {
+    field.addEventListener('change', updateApproveButtonState);
+    field.addEventListener('input', updateApproveButtonState);
+  }
+});
+
 // Initialize page state - ensure only landing panel is visible
 (function initializePageState() {
   // Hide header initially
@@ -1837,6 +1910,10 @@ if (approveBtn) {
   approveBtn.addEventListener('click', () => {
     if (!parsedMessages.length || !meetsActivityCriteria) {
       alert('Please provide an eligible chat first.');
+      return;
+    }
+    if (!validateDemographics()) {
+      alert('Please complete all demographic questions before continuing.');
       return;
     }
     consentApproved = true;
