@@ -42,7 +42,6 @@ const demoWaFrequency = document.getElementById("demo-wa-frequency");
 const demoWaGroups = document.getElementById("demo-wa-groups");
 const demoWaAdminGroups = document.getElementById("demo-wa-admin-groups");
 const demoModerationExp = document.getElementById("demo-moderation-exp");
-const demoGuidelinesFamiliarity = document.getElementById("demo-guidelines-familiarity");
 const demoAdminDuration = document.getElementById("demo-admin-duration");
 const demoWritingConfidence = document.getElementById("demo-writing-confidence");
 const demoExplanationSkill = document.getElementById("demo-explanation-skill");
@@ -721,13 +720,13 @@ async function loadChatFile(chat, displayLabel) {
     const budget = enforceCharacterBudget(initialWindow, MAX_CONTEXT_CHARS);
     contextualWindow = budget.retained;
 
-    fileStatus.textContent = `${messages.length} messages loaded successfully.`;
+    fileStatus.textContent = `Chat loaded successfully.`;
     fileStatus.style.color = "";
-    dropZone.setAttribute("aria-label", `${contextualWindow.length} messages ready`);
+    dropZone.setAttribute("aria-label", `Chat ready`);
     dropZone.classList.add("loaded", "ready");
     dropZone.innerHTML = `
       <p class="dz-instructions"><strong>Chat detected.</strong></p>
-      <p class="dz-hint">Messages parsed: ${messages.length}. Drop another zip or chat .txt to replace it.</p>
+      <p class="dz-hint">Drop another zip or chat .txt to replace it.</p>
     `;
     dropZone.tabIndex = 0;
     dropZone.removeAttribute("aria-hidden");
@@ -1720,7 +1719,6 @@ function buildSubmissionPayload({ rankedWithOrder, genericSelections, contextual
       whatsappGroups: demoWaGroups?.value || '',
       whatsappAdminGroups: demoWaAdminGroups?.value || '',
       moderationExperience: demoModerationExp?.value || '',
-      guidelinesFamiliarity: demoGuidelinesFamiliarity?.value || '',
       adminDuration: demoAdminDuration?.value || '',
       writingConfidence: demoWritingConfidence?.value || '',
       explanationSkill: demoExplanationSkill?.value || '',
@@ -1844,7 +1842,7 @@ updateStartButtonState();
 function validateDemographics() {
   if (!demoAge || !demoGender || !demoLocation || !demoLanguages || !demoEducation ||
       !demoWaFrequency || !demoWaGroups || !demoWaAdminGroups || !demoModerationExp ||
-      !demoGuidelinesFamiliarity || !demoAdminDuration || !demoWritingConfidence ||
+      !demoAdminDuration || !demoWritingConfidence ||
       !demoExplanationSkill || !demoAttentionCheck) {
     return false;
   }
@@ -1858,14 +1856,13 @@ function validateDemographics() {
   const waGroups = demoWaGroups.value;
   const waAdminGroups = demoWaAdminGroups.value;
   const modExp = demoModerationExp.value;
-  const guidelinesFam = demoGuidelinesFamiliarity.value;
   const adminDur = demoAdminDuration.value;
   const writingConf = demoWritingConfidence.value;
   const explainSkill = demoExplanationSkill.value;
   const attCheck = demoAttentionCheck.value;
 
   return age && gender && location && languages && education && waFreq &&
-         waGroups && waAdminGroups && modExp && guidelinesFam && adminDur &&
+         waGroups && waAdminGroups && modExp && adminDur &&
          writingConf && explainSkill && attCheck;
 }
 
@@ -1880,7 +1877,7 @@ function updateApproveButtonState() {
 // Add event listeners to demographic fields
 [demoAge, demoGender, demoLocation, demoLanguages, demoEducation,
  demoWaFrequency, demoWaGroups, demoWaAdminGroups, demoModerationExp,
- demoGuidelinesFamiliarity, demoAdminDuration, demoWritingConfidence,
+ demoAdminDuration, demoWritingConfidence,
  demoExplanationSkill, demoAttentionCheck].forEach(field => {
   if (field) {
     field.addEventListener('change', updateApproveButtonState);
