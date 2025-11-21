@@ -31,6 +31,7 @@ const transcriptPreview = document.getElementById("transcript-preview");
 const sourceIdField = document.getElementById("source-id-field");
 const sourceIdInput = document.getElementById("source-id");
 const sourceIdLabel = document.getElementById("source-id-label");
+const proceedInstruction = document.getElementById("proceed-instruction");
 
 let chatFile = null;
 let parsedMessages = [];
@@ -50,6 +51,7 @@ let sourceId = null;
 let lastGenerated = null;
 let deviceType = null;
 let transcriptMeta = null;
+let rulesGenerated = false;
 
 const MAX_SELECTED_RULES = 7;
 const MAX_CONTEXT_CHARS = 300000;
@@ -809,6 +811,12 @@ function clearRulesUI() {
     rankingNote.hidden = true;
     rankingNote.textContent = "";
   }
+  // Reset generation state
+  rulesGenerated = false;
+  generateBtn.textContent = "Click here for some suggestive guidelines";
+  if (proceedInstruction) {
+    proceedInstruction.hidden = true;
+  }
 }
 
 function buildStats(messages, participantsMap, extras = {}) {
@@ -1302,6 +1310,12 @@ function moveRuleToAvailable(ruleId, targetIndex) {
 }
 
 function updateGenerateButtonState() {
+  // If rules have already been generated, keep button disabled
+  if (rulesGenerated) {
+    generateBtn.disabled = true;
+    return;
+  }
+
   const hasFile = Boolean(chatFile);
   const selected = groupTypeSelect.value;
   const otherOk = selected === "Other" ? Boolean(groupTypeOtherInput && groupTypeOtherInput.value.trim()) : true;
@@ -1513,6 +1527,14 @@ generateBtn.addEventListener("click", async () => {
     rankedRules = [];
     renderRuleLists();
     setLoadingState("idle");
+
+    // Mark rules as generated and show proceed instruction
+    rulesGenerated = true;
+    generateBtn.disabled = true;
+    generateBtn.textContent = "Guidelines Generated";
+    if (proceedInstruction) {
+      proceedInstruction.hidden = false;
+    }
   } catch (error) {
     console.error(error);
     errorBox.textContent = error.message;

@@ -1,0 +1,42 @@
+[33mcaa7caa[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix transcript upload page -- try 2
+[33me0e3622[m Fix transcript upload page
+[33m2c6f217[m Fix landing page text box--try 5
+[33m78f7f85[m Fix landing page text box--try 4
+[33m4ff8ba6[m Fix landing page text box--try 3
+[33m7e2ae35[m Fix landing page text box
+[33m211aebb[m Fix landing page text box
+[33m86290fe[m Separate selection and reranking
+[33m6578102[m Changing landing page
+[33m534b6ce[m Changing landing page
+[33m79105ee[m Changing landing page
+[33mceaa4ca[m Separate landing page
+[33m39f1cad[m Additional improvements
+[33m9950758[m Remove folder upload
+[33m530c941[m UI changes and better function on mobile devices
+[33mf721338[m Adding transript reqs doc
+[33m45a3957[m Adding transript reqs doc
+[33md14a1fb[m Adding constraints to the transcripts--try 2
+[33m609fdb4[m Adding constraints to the transcripts
+[33mda73206[m Remove ranked merged rules
+[33m289e9d2[m Remove ranked merged rules
+[33m9a6e220[m Buffer button fix after rule generation
+[33md79843d[m Present original rules that were merged for reference
+[33m8659e26[m Present original rules that were merged for reference)
+[33m69db9f1[m Reframed the wordings on the landing page
+[33m777c443[m polished the prompts a bit
+[33m0c48ba8[m Merge similar rules
+[33m4130378[m Add contextual rules
+[33me6c2ced[m Adding Android support. Plz help me god
+[33m104bbd2[m Added reasons
+[33mebbd0da[m reverting to gemini 2.5 pro only
+[33m5e992f7[m Change openai model from gpt4.1 to gpt5
+[33m4573ca1[m TRIED to add open-ai model, remove buffering wheel after rule generation
+[33m3d60c6e[m reverting to local code manually
+[33m6c5a177[m fix zip file parsing
+[33macbfd4a[m fix zip file parsing
+[33m0bc0f3e[m fix zip file parsing
+[33m741f602[m Added source files
+[33m6718e35[m Revise README to clarify rule generation process
+[33ma615230[m Enhance README with app overview section
+[33mba4cbe4[m Add .gitignore file for environment and build artifacts
+[33m1c1d5f1[m Add initial README for WhatsApp Rule Assistant

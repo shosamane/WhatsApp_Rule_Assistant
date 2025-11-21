@@ -80,17 +80,20 @@
     </section>
 
     <section class="panel" id="generation-panel" hidden>
-      <h2>2. Generate Rules</h2>
+      <p>Click the button below to generate guidelines. This will take approximately one minute.</p>
       <button id="generate-btn" class="primary" disabled>Click here for some suggestive guidelines</button>
       <div id="loading" class="loading" hidden>
         <span class="spinner" aria-hidden="true"></span>
         <span class="loading-text">Please wait for 1 minute...</span>
       </div>
       <div id="generation-errors" class="errors" role="alert"></div>
+      <div id="proceed-instruction" class="note" hidden>
+        <p><strong>Guidelines ready.</strong> Scroll down to rank them.</p>
+      </div>
     </section>
 
     <section class="panel" id="ranking-panel" hidden>
-      <h2>3. Rank the Rules</h2>
+      <h2>Rank the Rules</h2>
       <p>Drag up to seven rules into the ranking zone. The list is ordered from Rank 1 at the top to Rank 7 at the bottom. You must rank at least one rule.</p>
       <p id="ranking-note" class="note" hidden></p>
       <div class="ranking-layout">
