@@ -18,12 +18,14 @@ const ruleCardTemplate = document.getElementById("rule-card-template");
 const rankingNote = document.getElementById("ranking-note");
 const loadingSpinner = loadingBox?.querySelector(".spinner") || null;
 const loadingText = loadingBox?.querySelector(".loading-text") || null;
-// Landing/consent elements
+// Landing / instructions / upload elements
 const landingPanel = document.getElementById("landing-panel");
-const consentPanel = document.getElementById("consent-panel");
+const instructionsPanel = document.getElementById("instructions-panel");
+const uploadPanel = document.getElementById("upload-panel");
 const groupPanel = document.getElementById("group-panel");
 const generationPanel = document.getElementById("generation-panel");
 const startBtn = document.getElementById("start-btn");
+const instructionsBtn = document.getElementById("instructions-btn");
 const approveBtn = document.getElementById("approve-btn");
 const transcriptPreview = document.getElementById("transcript-preview");
 const sourceIdField = document.getElementById("source-id-field");
@@ -1762,7 +1764,14 @@ if (startBtn) {
     sourceType = v;
     sourceId = idVal;
     if (landingPanel) landingPanel.hidden = true;
-    if (consentPanel) consentPanel.hidden = false;
+    if (instructionsPanel) instructionsPanel.hidden = false;
+  });
+}
+
+if (instructionsBtn) {
+  instructionsBtn.addEventListener('click', () => {
+    if (instructionsPanel) instructionsPanel.hidden = true;
+    if (uploadPanel) uploadPanel.hidden = false;
   });
 }
 
@@ -1789,7 +1798,7 @@ if (approveBtn) {
       return;
     }
     consentApproved = true;
-    if (consentPanel) consentPanel.hidden = true;
+    if (uploadPanel) uploadPanel.hidden = true;
     if (groupPanel) groupPanel.hidden = false;
     if (generationPanel) generationPanel.hidden = false;
     updateGenerateButtonState();

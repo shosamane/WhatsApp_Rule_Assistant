@@ -14,7 +14,6 @@
     </header>
 
     <section class="panel" id="landing-panel">
-      <h2>Start</h2>
       <div class="field">
         <span>How did you get here?</span>
         <div class="options">
@@ -30,16 +29,18 @@
       <button id="start-btn" class="primary" disabled>Continue</button>
     </section>
 
-    <section class="panel" id="consent-panel" hidden>
-      <h2>Instructions</h2>
+    <section class="panel" id="instructions-panel" hidden>
       <p>We’ll generate draft guidelines from your group’s chat. Your chat is processed on your device. Only pseudonymous sender labels (User 01, User 02, …) are included in any analysis.</p>
-      <h3>Provide Chat Export</h3>
+      <button id="instructions-btn" class="primary">Next</button>
+    </section>
+
+    <section class="panel" id="upload-panel" hidden>
       <div id="drop-zone" class="drop-zone" tabindex="0" aria-label="Drop WhatsApp zip or chat .txt here">
         <p class="dz-instructions"><strong>Drop a zip or chat .txt</strong> or use the pickers below.</p>
         <p class="dz-hint">Pick a .zip or the chat .txt (usually <code>_chat.txt</code>). Media files are ignored.</p>
       </div>
       <div class="picker-row">
-        <label class="picker-label" for="chat-zip">Or choose zip:</label>
+        <label class="picker-label" for="chat-zip">Choose zip:</label>
         <input id="chat-zip" type="file" accept=".zip" />
       </div>
       <div class="picker-row">
@@ -48,8 +49,10 @@
       </div>
       <p class="tip">If Google Drive fails on Android, download the file to your device and pick it from Files.</p>
       <div class="file-status" id="file-status" role="status" aria-live="polite"></div>
-      <h3>Preview (pseudonymized)</h3>
-      <div id="transcript-preview" class="transcript-preview" aria-label="Transcript preview" tabindex="0"></div>
+      <div class="field">
+        <span>Preview (pseudonymized)</span>
+        <div id="transcript-preview" class="transcript-preview" aria-label="Transcript preview" tabindex="0"></div>
+      </div>
       <button id="approve-btn" class="primary" disabled>Approve and Continue</button>
     </section>
 
