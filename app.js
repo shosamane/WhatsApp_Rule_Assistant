@@ -18,6 +18,17 @@ const ruleCardTemplate = document.getElementById("rule-card-template");
 const rankingNote = document.getElementById("ranking-note");
 const loadingSpinner = loadingBox?.querySelector(".spinner") || null;
 const loadingText = loadingBox?.querySelector(".loading-text") || null;
+// Landing/consent elements
+const landingPanel = document.getElementById("landing-panel");
+const consentPanel = document.getElementById("consent-panel");
+const groupPanel = document.getElementById("group-panel");
+const generationPanel = document.getElementById("generation-panel");
+const startBtn = document.getElementById("start-btn");
+const approveBtn = document.getElementById("approve-btn");
+const transcriptPreview = document.getElementById("transcript-preview");
+const sourceIdField = document.getElementById("source-id-field");
+const sourceIdInput = document.getElementById("source-id");
+const sourceIdLabel = document.getElementById("source-id-label");
 
 let chatFile = null;
 let parsedMessages = [];
@@ -30,6 +41,13 @@ let loadingResetTimer = null;
 let originalsById = new Map();
 let meetsActivityCriteria = true;
 let wasDragging = false;
+let consentApproved = false;
+let pseudoMap = new Map();
+let sourceType = null;
+let sourceId = null;
+let lastGenerated = null;
+let deviceType = null;
+let transcriptMeta = null;
 
 const MAX_SELECTED_RULES = 7;
 const MAX_CONTEXT_CHARS = 300000;
@@ -116,9 +134,9 @@ Return JSON only in this schema:
 function buildContextualPrompt({ groupType, stats, messages }) {
   const lines = messages.map((msg) => JSON.stringify({
     timestamp: msg.timestampIso,
-    sender: msg.sender,
+    sender: pseudoOf(msg.sender),
     mediaType: msg.mediaType,
-    content: msg.raw,
+    content: redactContent(msg.raw),
   }));
   const messagesBlock = lines.join("\n");
 
@@ -174,7 +192,7 @@ function buildMetadataOnlyPrompt({ groupType, stats, messages }) {
   const lines = messages.map((msg) => {
     const meta = {
       timestamp: msg.timestampIso,
-      sender: msg.sender,
+      sender: pseudoOf(msg.sender),
       mediaType: msg.mediaType,
     };
 
@@ -473,6 +491,9 @@ function checkTranscriptEligibility(messages) {
     totalMessages: messages.length,
     uniqueParticipants: 0,
     last30Count: 0,
+    last30Avg: 0,
+    earliestIso: null,
+    latestIso: null,
     // individual checks
     spanOk: false,
     totalOk: false,
@@ -489,10 +510,13 @@ function checkTranscriptEligibility(messages) {
   const earliest = messages[0].timestamp;
   const latest = messages[messages.length - 1].timestamp;
   result.spanDays = Math.floor((latest - earliest) / msDay);
+  result.earliestIso = messages[0].timestampIso;
+  result.latestIso = messages[messages.length - 1].timestampIso;
 
   const last30Start = new Date(latest.getTime() - 30 * msDay);
   const last30 = messages.filter((m) => m.timestamp >= last30Start);
   result.last30Count = last30.length;
+  result.last30Avg = last30.length / 30;
 
   const unique = new Set();
   for (const m of messages) {
@@ -507,6 +531,26 @@ function checkTranscriptEligibility(messages) {
   result.recentOk = result.last30Count >= 50;
   result.ok = result.spanOk && result.totalOk && result.uniqueOk && result.recentOk;
   return result;
+}
+
+// Heuristic device inference from content format
+function inferDeviceType(contents) {
+  try {
+    const sample = String(contents).slice(0, 20000).split(/\r?\n/).slice(0, 500);
+    let bracket = 0, hyphen = 0;
+    const BR = /^\[\d{1,2}\/\d{1,2}\/\d{2,4},\s*[^\]]+\]\s.+?:\s/;
+    const HY = /^\d{1,2}\/\d{1,2}\/\d{2,4},\s*[^-–—]+\s*[-–—]\s.+?:\s/;
+    for (const line of sample) {
+      const s = line.replace(/[\u200e\u200f]/g, '').trim();
+      if (BR.test(s)) bracket += 1; else if (HY.test(s)) hyphen += 1;
+      if (bracket + hyphen > 20) break;
+    }
+    if (bracket > hyphen && bracket >= 2) return 'ios';
+    if (hyphen > bracket && hyphen >= 2) return 'android';
+    return 'unknown';
+  } catch {
+    return 'unknown';
+  }
 }
 
 function enforceCharacterBudget(messages, maxChars) {
@@ -674,9 +718,12 @@ async function loadChatFile(chat, displayLabel) {
     dropZone.removeAttribute("aria-hidden");
     dropZone.style.pointerEvents = "";
 
+    // Build pseudonym map across full transcript and count contextual participants with pseudonyms
+    pseudoMap = buildPseudonymMap(parsedMessages);
     const contextualParticipants = new Map();
     for (const msg of contextualWindow) {
-      contextualParticipants.set(msg.sender, (contextualParticipants.get(msg.sender) ?? 0) + 1);
+      const name = pseudoOf(msg.sender);
+      contextualParticipants.set(name, (contextualParticipants.get(name) ?? 0) + 1);
     }
 
     const stats = buildStats(contextualWindow, contextualParticipants, {
@@ -688,6 +735,17 @@ async function loadChatFile(chat, displayLabel) {
     // Eligibility check using full transcript (not just context window)
     const elig = checkTranscriptEligibility(parsedMessages);
     meetsActivityCriteria = elig.ok;
+    deviceType = inferDeviceType(contents);
+    transcriptMeta = {
+      deviceType,
+      totalMessages: elig.totalMessages,
+      uniqueParticipants: elig.uniqueParticipants,
+      earliestIso: elig.earliestIso,
+      latestIso: elig.latestIso,
+      last30Count: elig.last30Count,
+      last30Avg: Number(elig.last30Avg.toFixed(2)),
+      spanDays: elig.spanDays,
+    };
     if (!elig.ok) {
       const bullets = [];
       if (!elig.spanOk) bullets.push(`- spans at least 90 days (current: ${elig.spanDays} days)`);
@@ -703,6 +761,11 @@ async function loadChatFile(chat, displayLabel) {
       ].join(" \n");
     }
 
+    // Render transcript preview and enable approval if eligible
+    renderTranscriptPreview(parsedMessages);
+    if (approveBtn) {
+      approveBtn.disabled = !(meetsActivityCriteria && parsedMessages.length > 0);
+    }
     return true;
   } catch (error) {
     console.error("Failed to read chat file", error);
@@ -1241,7 +1304,7 @@ function updateGenerateButtonState() {
   const selected = groupTypeSelect.value;
   const otherOk = selected === "Other" ? Boolean(groupTypeOtherInput && groupTypeOtherInput.value.trim()) : true;
   const hasGroupType = Boolean(selected) && otherOk;
-  generateBtn.disabled = !(hasFile && hasGroupType && parsedMessages.length && meetsActivityCriteria);
+  generateBtn.disabled = !(hasFile && hasGroupType && parsedMessages.length && meetsActivityCriteria && consentApproved);
 }
 
 dropZone.addEventListener("dragover", (event) => {
@@ -1433,6 +1496,16 @@ generateBtn.addEventListener("click", async () => {
     const mergedRaw = await callGemini({ prompt: mergePrompt, model: GEMINI_FLASH_MODEL });
     const merged = parseMergedRules(mergedRaw, idToSource);
 
+    // remember for submission storage
+    lastGenerated = {
+      generic: genericRules,
+      contextual: contextualRules,
+      metadata: metadataRules,
+      merged,
+      stats,
+      groupType,
+    };
+
     allRules = shuffle(merged);
     availableRules = [...allRules];
     rankedRules = [];
@@ -1580,6 +1653,178 @@ submitRankingsBtn.addEventListener("click", () => {
   } catch (e) {
     console.error("Failed to build merged all-rules list", e);
   }
+
+  // After rendering results, store the submission (non-blocking)
+  try {
+    const payload = buildSubmissionPayload({ rankedWithOrder, genericSelections, contextualSelections, metadataSelections });
+    storeSubmission(payload).catch((e) => console.error('Store failed', e));
+  } catch (e) {
+    console.error('Failed to build/store submission', e);
+  }
 });
 
+function buildSubmissionPayload({ rankedWithOrder, genericSelections, contextualSelections, metadataSelections }) {
+  const sessionId = getOrCreateSessionId();
+  const ranked = rankedWithOrder.map(item => ({
+    rank: item.rank,
+    text: item.rule.text,
+    reason: item.rule.reason,
+    sources: item.rule.sources || [item.rule.source],
+    origIds: item.rule.origIds || [],
+  }));
+  const previewLines = (transcriptPreview?.textContent || '').split('\n');
+  return {
+    sessionId,
+    sourceType,
+    sourceId,
+    transcript: transcriptMeta || {},
+    groupType: lastGenerated?.groupType || (groupTypeSelect.value || ''),
+    stats: lastGenerated?.stats || JSON.parse(dropZone.dataset.stats || '{}'),
+    eligibility: { meetsActivityCriteria },
+    pseudonymMap: Object.fromEntries(pseudoMap),
+    preview: previewLines,
+    generated: {
+      generic: lastGenerated?.generic || [],
+      contextual: lastGenerated?.contextual || [],
+      metadata: lastGenerated?.metadata || [],
+      merged: lastGenerated?.merged || [],
+    },
+    ranking: {
+      ranked,
+      genericSelections,
+      contextualSelections,
+      metadataSelections,
+    },
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function getOrCreateSessionId() {
+  try {
+    const key = 'wra_session_id';
+    let id = sessionStorage.getItem(key);
+    if (!id) {
+      const bytes = new Uint8Array(16);
+      (window.crypto || window.msCrypto).getRandomValues(bytes);
+      id = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+      sessionStorage.setItem(key, id);
+    }
+    return id;
+  } catch {
+    return String(Date.now()) + '-' + Math.random().toString(16).slice(2);
+  }
+}
+
+async function storeSubmission(data) {
+  const resp = await fetch('/webhook3/api/store', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!resp.ok) {
+    const t = await resp.text().catch(() => '');
+    throw new Error(`Store error ${resp.status}: ${t}`);
+  }
+  return await resp.json();
+}
+
 updateGenerateButtonState();
+
+// ---------- Landing / Consent flow ----------
+function getSelectedSource() {
+  const radios = document.querySelectorAll('input[name="source"]');
+  for (const r of radios) { if (r.checked) return r.value; }
+  return null;
+}
+
+document.addEventListener('change', (e) => {
+  if (e.target && e.target.name === 'source') {
+    const v = getSelectedSource();
+    if (!sourceIdField) return;
+    if (v) {
+      sourceIdField.hidden = false;
+      if (sourceIdLabel) {
+        sourceIdLabel.textContent = v === 'research' ? 'Enter your code' : (v === 'prolific' ? 'Enter your Prolific ID' : 'Enter your Clickworker ID');
+      }
+    }
+  }
+});
+
+if (startBtn) {
+  startBtn.addEventListener('click', () => {
+    const v = getSelectedSource();
+    const idVal = (sourceIdInput?.value || '').trim();
+    if (!v || !idVal) {
+      alert('Please select an option and enter your code/ID.');
+      return;
+    }
+    sourceType = v;
+    sourceId = idVal;
+    if (landingPanel) landingPanel.hidden = true;
+    if (consentPanel) consentPanel.hidden = false;
+  });
+}
+
+if (approveBtn) {
+  approveBtn.addEventListener('click', () => {
+    if (!parsedMessages.length || !meetsActivityCriteria) {
+      alert('Please provide an eligible chat first.');
+      return;
+    }
+    consentApproved = true;
+    if (consentPanel) consentPanel.hidden = true;
+    if (groupPanel) groupPanel.hidden = false;
+    if (generationPanel) generationPanel.hidden = false;
+    updateGenerateButtonState();
+  });
+}
+
+function renderTranscriptPreview(messages) {
+  if (!transcriptPreview) return;
+  const show = messages.slice(-50);
+  const lines = show.map(msg => {
+    const ts = new Date(msg.timestampIso);
+    const yyyy = ts.getFullYear();
+    const mm = String(ts.getMonth()+1).padStart(2,'0');
+    const dd = String(ts.getDate()).padStart(2,'0');
+    const hh = String(ts.getHours()).padStart(2,'0');
+    const mi = String(ts.getMinutes()).padStart(2,'0');
+    const who = pseudoOf(msg.sender);
+    const body = msg.mediaType && msg.mediaType !== 'text' ? `[${msg.mediaType}]` : redactContent(msg.raw || '');
+    return `[${yyyy}-${mm}-${dd} ${hh}:${mi}] ${who}: ${body}`;
+  });
+  transcriptPreview.textContent = lines.join('\n');
+}
+
+function buildPseudonymMap(messages) {
+  const map = new Map();
+  let i = 1;
+  for (const msg of messages) {
+    const name = msg.sender;
+    if (!name || name === '(system)') continue;
+    if (!map.has(name)) {
+      const label = `User ${String(i).padStart(2,'0')}`;
+      map.set(name, label);
+      i += 1;
+    }
+  }
+  return map;
+}
+
+function pseudoOf(name) {
+  if (!name || name === '(system)') return name;
+  return pseudoMap.get(name) || 'User ??';
+}
+
+// Redact URLs, emails, and phone-like numbers from content
+function redactContent(text) {
+  if (!text) return text;
+  let out = String(text);
+  // URLs
+  out = out.replace(/https?:\/\/[^\s]+/gi, '[URL]');
+  // Emails
+  out = out.replace(/\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b/g, '[EMAIL]');
+  // Phone-like numbers (+country codes, spaces, dashes, parentheses, length >= 7)
+  out = out.replace(/\+?\d[\d\s\-()]{6,}\d/g, '[PHONE]');
+  return out;
+}

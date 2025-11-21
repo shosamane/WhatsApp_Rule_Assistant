@@ -10,11 +10,30 @@
   <main class="container">
     <header class="header">
       <h1>WhatsApp Guidelines Evaluation</h1>
-      <p>Upload your own WhatsApp group chat export, pick the group category type that fits best, and tell us what guidelines are most appropriate for your group.</p>
+      <p>Help us understand what guidelines fit your group best. This app runs locally in your browser and processes your chat text on your device.</p>
     </header>
 
-    <section class="panel">
-      <h2>1. Provide Chat Export</h2>
+    <section class="panel" id="landing-panel">
+      <h2>Start</h2>
+      <div class="field">
+        <span>How did you get here?</span>
+        <div class="options">
+          <label><input type="radio" name="source" value="research" /> The researchers gave me a code</label>
+          <label><input type="radio" name="source" value="prolific" /> I'm here from Prolific</label>
+          <label><input type="radio" name="source" value="clickworker" /> I'm here from Clickworker</label>
+        </div>
+      </div>
+      <div class="field" id="source-id-field" hidden>
+        <span id="source-id-label">Enter your code</span>
+        <input id="source-id" type="text" placeholder="Enter your code/ID" />
+      </div>
+      <button id="start-btn" class="primary">Continue</button>
+    </section>
+
+    <section class="panel" id="consent-panel" hidden>
+      <h2>Instructions</h2>
+      <p>We’ll generate draft guidelines from your group’s chat. Your chat is processed on your device. Only pseudonymous sender labels (User 01, User 02, …) are included in any analysis.</p>
+      <h3>Provide Chat Export</h3>
       <div id="drop-zone" class="drop-zone" tabindex="0" aria-label="Drop WhatsApp zip or chat .txt here">
         <p class="dz-instructions"><strong>Drop a zip or chat .txt</strong> or use the pickers below.</p>
         <p class="dz-hint">Pick a .zip or the chat .txt (usually <code>_chat.txt</code>). Media files are ignored.</p>
@@ -29,10 +48,13 @@
       </div>
       <p class="tip">If Google Drive fails on Android, download the file to your device and pick it from Files.</p>
       <div class="file-status" id="file-status" role="status" aria-live="polite"></div>
+      <h3>Preview (pseudonymized)</h3>
+      <div id="transcript-preview" class="transcript-preview" aria-label="Transcript preview" tabindex="0"></div>
+      <button id="approve-btn" class="primary" disabled>Approve and Continue</button>
     </section>
 
-    <section class="panel">
-      <h2>2. Describe the Group</h2>
+    <section class="panel" id="group-panel" hidden>
+      <h2>1. Describe the Group</h2>
       <label class="field">
         <span>Group type</span>
         <select id="group-type">
@@ -54,8 +76,8 @@
       <!-- <p class="tip">Gemini API access is preconfigured for this prototype.</p> -->
     </section>
 
-    <section class="panel">
-      <h2>3. Generate Rules</h2>
+    <section class="panel" id="generation-panel" hidden>
+      <h2>2. Generate Rules</h2>
       <button id="generate-btn" class="primary" disabled>Click here for some suggestive guidelines</button>
       <div id="loading" class="loading" hidden>
         <span class="spinner" aria-hidden="true"></span>
@@ -65,7 +87,7 @@
     </section>
 
     <section class="panel" id="ranking-panel" hidden>
-      <h2>4. Rank the Rules</h2>
+      <h2>3. Rank the Rules</h2>
       <p>Drag up to seven rules into the ranking zone. The list is ordered from Rank 1 at the top to Rank 7 at the bottom. You must rank at least one rule.</p>
       <p id="ranking-note" class="note" hidden></p>
       <div class="ranking-layout">

@@ -2,12 +2,25 @@
 const express = require("express");
 const compression = require("compression");
 const path = require("path");
+let MongoClient = null;
+try { ({ MongoClient } = require('mongodb')); } catch (e) { /* mongodb optional until installed */ }
 
 // ---- basics ----
 const app = express();
 const base = "/webhook3";
 const root = __dirname;
 const port = 9089;
+const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017';
+const mongoDbName = process.env.MONGODB_DB || 'whatsapp_rule_assistant';
+const mongoColl = process.env.MONGODB_COLLECTION || 'submissions';
+let mongoClient = null;
+async function getMongo() {
+  if (!MongoClient) throw new Error('mongodb driver not installed. Run: npm install mongodb');
+  if (mongoClient && mongoClient.topology?.isConnected()) return mongoClient;
+  mongoClient = new MongoClient(mongoUri, { ignoreUndefined: true });
+  await mongoClient.connect();
+  return mongoClient;
+}
 
 app.disable("x-powered-by");
 app.set("trust proxy", true);
@@ -61,6 +74,30 @@ app.post(`${base}/api/generate`, async (req, res) => {
   } catch (err) {
     console.error("Gemini proxy error:", err);
     return res.status(500).json({ error: "proxy_failure" });
+  }
+});
+
+// ---- store submission ----
+app.post(`${base}/api/store`, async (req, res) => {
+  try {
+    const payload = req.body || {};
+    // Basic sanity: require a sessionId and createdAt
+    if (!payload.sessionId) return res.status(400).json({ error: 'missing_sessionId' });
+    if (!payload.createdAt) payload.createdAt = new Date().toISOString();
+    payload.serverReceivedAt = new Date().toISOString();
+    payload.remote = { ip: req.ip };
+
+    const client = await getMongo();
+    const db = client.db(mongoDbName);
+    const coll = db.collection(mongoColl);
+    const result = await coll.insertOne(payload);
+    return res.json({ ok: true, id: String(result.insertedId) });
+  } catch (err) {
+    console.error('store error', err);
+    if (/mongodb driver not installed/i.test(String(err))) {
+      return res.status(500).json({ error: 'driver_missing', hint: 'Install with: npm install mongodb' });
+    }
+    return res.status(500).json({ error: 'store_failed' });
   }
 });
 

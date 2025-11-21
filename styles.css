@@ -94,6 +94,9 @@ body {
   background: var(--accent-soft);
 }
 
+/* Ensure drop zone spans container width */
+.drop-zone { width: 100%; }
+
 .dz-instructions {
   margin: 0;
   font-size: 1rem;
@@ -109,6 +112,7 @@ body {
   display: flex;
   gap: 0.75rem;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .picker-label {
@@ -225,6 +229,31 @@ input:focus {
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* Mobile-friendly inputs and preview */
+.picker-row input[type="file"] {
+  flex: 1 1 280px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.options {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.transcript-preview {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  padding: 0.75rem;
+  line-height: 1.4;
+  max-height: calc(1.4em * 7 + 0.5rem);
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
 }
 
 
