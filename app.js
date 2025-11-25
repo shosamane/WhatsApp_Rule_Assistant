@@ -29,7 +29,6 @@ const startBtn = document.getElementById("start-btn");
 const consentAgreeBtn = document.getElementById("consent-agree-btn");
 const consentDeclineBtn = document.getElementById("consent-decline-btn");
 const consentContinueBtn = document.getElementById("consent-continue-btn");
-const downloadConsentPdfBtn = document.getElementById("download-consent-pdf");
 const consentParticipantId = document.getElementById("consent-participant-id");
 const consentRead = document.getElementById("consent-read");
 const consentAge = document.getElementById("consent-age");
@@ -1913,10 +1912,24 @@ function updateConsentButtonState() {
 // Landing page: Start button navigation
 if (startBtn) {
   startBtn.addEventListener('click', () => {
+    // Capture source type and ID from landing page
+    const selectedSource = getSelectedSource();
+    const enteredId = (sourceIdInput?.value || '').trim();
+
+    if (!selectedSource || !enteredId) {
+      alert('Please select an option and enter your code/ID.');
+      return;
+    }
+
+    // Set global variables
+    sourceType = selectedSource;
+    sourceId = enteredId;
+
     // Populate participant ID in consent form
-    if (consentParticipantId && sourceId) {
+    if (consentParticipantId) {
       consentParticipantId.textContent = sourceId;
     }
+
     if (landingPanel) landingPanel.hidden = true;
     if (consentPanel) consentPanel.hidden = false;
   });
@@ -1951,115 +1964,6 @@ if (consentContinueBtn) {
     }
     if (consentPanel) consentPanel.hidden = true;
     if (instructionsPanel) instructionsPanel.hidden = false;
-  });
-}
-
-// PDF Download functionality
-if (downloadConsentPdfBtn) {
-  downloadConsentPdfBtn.addEventListener('click', async () => {
-    try {
-      // Disable button during generation
-      downloadConsentPdfBtn.disabled = true;
-      downloadConsentPdfBtn.textContent = 'Generating PDF...';
-
-      // Create a temporary container for PDF content
-      const pdfContainer = document.createElement('div');
-      pdfContainer.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 210mm;
-        padding: 20px;
-        background-color: white;
-        color: black;
-        font-family: Arial, sans-serif;
-        font-size: 12px;
-        line-height: 1.6;
-        z-index: 9999;
-        overflow: visible;
-      `;
-
-      // Page 1: Landing/Source ID
-      const page1 = document.createElement('div');
-      page1.style.cssText = 'margin-bottom: 30px; page-break-after: always;';
-      page1.innerHTML = `
-        <h1 style="font-size: 20px; margin-bottom: 10px; color: black;">WhatsApp Guidelines Evaluation</h1>
-        <p style="margin-bottom: 10px; color: black;"><strong>Participant Information</strong></p>
-        <p style="margin-bottom: 5px; color: black;">Source: ${sourceType || 'Not specified'}</p>
-        <p style="margin-bottom: 5px; color: black;">ID/Code: ${sourceId || 'Not specified'}</p>
-        <p style="margin-bottom: 5px; color: black;">Date: ${new Date().toLocaleDateString()}</p>
-        <hr style="margin: 20px 0; border: 1px solid #ccc;" />
-      `;
-
-      // Page 2: Consent Form - clone and clean
-      const consentClone = consentPanel.cloneNode(true);
-      consentClone.removeAttribute('hidden');
-      consentClone.style.cssText = 'display: block !important; visibility: visible !important; color: black;';
-
-      // Remove all buttons from clone
-      const buttonsInClone = consentClone.querySelectorAll('button');
-      buttonsInClone.forEach(btn => btn.remove());
-
-      // Remove the "Save or print" paragraph
-      const saveParagraph = consentClone.querySelector('p[style*="muted"]');
-      if (saveParagraph) saveParagraph.remove();
-
-      // Process checkboxes - show as checked/unchecked symbols
-      const checkboxLabels = consentClone.querySelectorAll('.options label');
-      checkboxLabels.forEach(label => {
-        const checkbox = label.querySelector('input[type="checkbox"]');
-        if (checkbox) {
-          const isChecked = checkbox.checked;
-          const labelText = label.textContent.trim();
-          checkbox.remove();
-          label.innerHTML = `<span style="color: black;">${isChecked ? '☑' : '☐'} ${labelText}</span>`;
-          label.style.color = 'black';
-        }
-      });
-
-      // Make all text black
-      const allElements = consentClone.querySelectorAll('*');
-      allElements.forEach(el => {
-        el.style.color = 'black';
-      });
-
-      pdfContainer.appendChild(page1);
-      pdfContainer.appendChild(consentClone);
-
-      // Add to body (visible for rendering)
-      document.body.appendChild(pdfContainer);
-
-      // Wait for rendering
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Generate PDF
-      const opt = {
-        margin: [10, 10, 10, 10],
-        filename: `WhatsApp_Study_Consent_${sourceId || 'participant'}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          letterRendering: true,
-          backgroundColor: '#ffffff',
-          logging: false
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-      };
-
-      await html2pdf().set(opt).from(pdfContainer).save();
-
-      // Clean up
-      document.body.removeChild(pdfContainer);
-      downloadConsentPdfBtn.disabled = false;
-      downloadConsentPdfBtn.textContent = 'Download PDF Copy';
-    } catch (error) {
-      console.error('PDF generation failed:', error);
-      alert('Failed to generate PDF. Please try using your browser\'s print function (Ctrl+P or Cmd+P) to save as PDF.');
-      downloadConsentPdfBtn.disabled = false;
-      downloadConsentPdfBtn.textContent = 'Download PDF Copy';
-    }
   });
 }
 
