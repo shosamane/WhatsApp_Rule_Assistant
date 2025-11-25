@@ -28,7 +28,9 @@ const generationPanel = document.getElementById("generation-panel");
 const startBtn = document.getElementById("start-btn");
 const consentAgreeBtn = document.getElementById("consent-agree-btn");
 const consentDeclineBtn = document.getElementById("consent-decline-btn");
+const consentContinueBtn = document.getElementById("consent-continue-btn");
 const downloadConsentPdfBtn = document.getElementById("download-consent-pdf");
+const consentParticipantId = document.getElementById("consent-participant-id");
 const consentRead = document.getElementById("consent-read");
 const consentAge = document.getElementById("consent-age");
 const consentVoluntary = document.getElementById("consent-voluntary");
@@ -68,6 +70,7 @@ let originalsById = new Map();
 let meetsActivityCriteria = true;
 let wasDragging = false;
 let consentGiven = false;
+let consentDeclined = false;
 let consentTimestamp = null;
 let consentApproved = false;
 let pseudoMap = new Map();
@@ -1890,11 +1893,14 @@ function updateApproveButtonState() {
 
 // Consent form validation and navigation
 function updateConsentButtonState() {
-  if (!consentAgreeBtn) return;
+  if (!consentAgreeBtn || !consentContinueBtn) return;
   const allChecked = consentRead?.checked && consentAge?.checked &&
                      consentVoluntary?.checked && consentConfidential?.checked &&
                      consentAgree?.checked;
   consentAgreeBtn.disabled = !allChecked;
+
+  // Continue button is only enabled if consent is given and not declined
+  consentContinueBtn.disabled = !(consentGiven && !consentDeclined);
 }
 
 // Add event listeners to consent checkboxes
@@ -1907,26 +1913,44 @@ function updateConsentButtonState() {
 // Landing page: Start button navigation
 if (startBtn) {
   startBtn.addEventListener('click', () => {
+    // Populate participant ID in consent form
+    if (consentParticipantId && sourceId) {
+      consentParticipantId.textContent = sourceId;
+    }
     if (landingPanel) landingPanel.hidden = true;
     if (consentPanel) consentPanel.hidden = false;
   });
 }
 
-// Consent page: Agree button
+// Consent page: Agree button (just sets the consent state, doesn't navigate)
 if (consentAgreeBtn) {
   consentAgreeBtn.addEventListener('click', () => {
     consentGiven = true;
+    consentDeclined = false;
     consentTimestamp = new Date().toISOString();
-    if (consentPanel) consentPanel.hidden = true;
-    if (instructionsPanel) instructionsPanel.hidden = false;
+    updateConsentButtonState();
   });
 }
 
-// Consent page: Decline button
+// Consent page: Decline button (disables continue)
 if (consentDeclineBtn) {
   consentDeclineBtn.addEventListener('click', () => {
+    consentGiven = false;
+    consentDeclined = true;
+    updateConsentButtonState();
     alert('You must agree to participate to continue with this study. Thank you for your interest.');
-    window.location.reload();
+  });
+}
+
+// Consent page: Continue button (navigates to next page)
+if (consentContinueBtn) {
+  consentContinueBtn.addEventListener('click', () => {
+    if (!consentGiven || consentDeclined) {
+      alert('Please agree to participate before continuing.');
+      return;
+    }
+    if (consentPanel) consentPanel.hidden = true;
+    if (instructionsPanel) instructionsPanel.hidden = false;
   });
 }
 
@@ -1940,55 +1964,88 @@ if (downloadConsentPdfBtn) {
 
       // Create a temporary container for PDF content
       const pdfContainer = document.createElement('div');
-      pdfContainer.style.padding = '20px';
-      pdfContainer.style.backgroundColor = 'white';
-      pdfContainer.style.color = 'black';
-      pdfContainer.style.fontFamily = 'Arial, sans-serif';
-      pdfContainer.style.fontSize = '12px';
-      pdfContainer.style.lineHeight = '1.6';
+      pdfContainer.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 210mm;
+        padding: 20px;
+        background-color: white;
+        color: black;
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+        line-height: 1.6;
+        z-index: 9999;
+        overflow: visible;
+      `;
 
       // Page 1: Landing/Source ID
       const page1 = document.createElement('div');
-      page1.style.marginBottom = '40px';
+      page1.style.cssText = 'margin-bottom: 30px; page-break-after: always;';
       page1.innerHTML = `
-        <h1 style="font-size: 20px; margin-bottom: 10px;">WhatsApp Guidelines Evaluation</h1>
-        <p style="margin-bottom: 10px;"><strong>Participant Information</strong></p>
-        <p style="margin-bottom: 5px;">Source: ${sourceType || 'Not specified'}</p>
-        <p style="margin-bottom: 5px;">ID/Code: ${sourceId || 'Not specified'}</p>
-        <p style="margin-bottom: 5px;">Date: ${new Date().toLocaleDateString()}</p>
+        <h1 style="font-size: 20px; margin-bottom: 10px; color: black;">WhatsApp Guidelines Evaluation</h1>
+        <p style="margin-bottom: 10px; color: black;"><strong>Participant Information</strong></p>
+        <p style="margin-bottom: 5px; color: black;">Source: ${sourceType || 'Not specified'}</p>
+        <p style="margin-bottom: 5px; color: black;">ID/Code: ${sourceId || 'Not specified'}</p>
+        <p style="margin-bottom: 5px; color: black;">Date: ${new Date().toLocaleDateString()}</p>
+        <hr style="margin: 20px 0; border: 1px solid #ccc;" />
       `;
 
       // Page 2: Consent Form - clone and clean
       const consentClone = consentPanel.cloneNode(true);
-      // Remove buttons from clone
+      consentClone.removeAttribute('hidden');
+      consentClone.style.cssText = 'display: block !important; visibility: visible !important; color: black;';
+
+      // Remove all buttons from clone
       const buttonsInClone = consentClone.querySelectorAll('button');
       buttonsInClone.forEach(btn => btn.remove());
-      // Remove checkboxes (show as checked text instead)
+
+      // Remove the "Save or print" paragraph
+      const saveParagraph = consentClone.querySelector('p[style*="muted"]');
+      if (saveParagraph) saveParagraph.remove();
+
+      // Process checkboxes - show as checked/unchecked symbols
       const checkboxLabels = consentClone.querySelectorAll('.options label');
       checkboxLabels.forEach(label => {
         const checkbox = label.querySelector('input[type="checkbox"]');
         if (checkbox) {
           const isChecked = checkbox.checked;
+          const labelText = label.textContent.trim();
           checkbox.remove();
-          label.innerHTML = (isChecked ? '☑ ' : '☐ ') + label.textContent;
+          label.innerHTML = `<span style="color: black;">${isChecked ? '☑' : '☐'} ${labelText}</span>`;
+          label.style.color = 'black';
         }
+      });
+
+      // Make all text black
+      const allElements = consentClone.querySelectorAll('*');
+      allElements.forEach(el => {
+        el.style.color = 'black';
       });
 
       pdfContainer.appendChild(page1);
       pdfContainer.appendChild(consentClone);
 
-      // Temporarily add to body (hidden)
-      pdfContainer.style.position = 'absolute';
-      pdfContainer.style.left = '-9999px';
+      // Add to body (visible for rendering)
       document.body.appendChild(pdfContainer);
+
+      // Wait for rendering
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Generate PDF
       const opt = {
         margin: [10, 10, 10, 10],
         filename: `WhatsApp_Study_Consent_${sourceId || 'participant'}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+          backgroundColor: '#ffffff',
+          logging: false
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
       await html2pdf().set(opt).from(pdfContainer).save();

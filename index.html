@@ -71,7 +71,7 @@
       <p>Learn more about IRB practices and privacy: IRBOffice@research.rutgers.edu or irbhp@cornell.edu</p>
 
       <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">CONSENT</h4>
-      <p><strong>Check all boxes to confirm:</strong></p>
+      <p><strong>I, <span id="consent-participant-id" style="text-decoration: underline;">__________</span>, confirm that:</strong></p>
 
       <div class="options">
         <label><input type="checkbox" id="consent-read" /> I have read this form and understand the study</label>
@@ -88,8 +88,10 @@
 
       <p style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--muted);">
         Save or print this form for your records.
-        <button id="download-consent-pdf" class="primary outline" style="margin-top: 0.5rem;">Download PDF Copy</button>
       </p>
+      <button id="download-consent-pdf" class="primary outline" style="margin-top: 0.5rem; display: block;">Download PDF Copy</button>
+
+      <button id="consent-continue-btn" class="primary" style="margin-top: 1.5rem; display: block;" disabled>Continue</button>
     </section>
 
     <section class="panel" id="instructions-panel" hidden>
