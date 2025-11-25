@@ -28,6 +28,7 @@ const generationPanel = document.getElementById("generation-panel");
 const startBtn = document.getElementById("start-btn");
 const consentAgreeBtn = document.getElementById("consent-agree-btn");
 const consentDeclineBtn = document.getElementById("consent-decline-btn");
+const downloadConsentPdfBtn = document.getElementById("download-consent-pdf");
 const consentRead = document.getElementById("consent-read");
 const consentAge = document.getElementById("consent-age");
 const consentVoluntary = document.getElementById("consent-voluntary");
@@ -1817,23 +1818,6 @@ document.addEventListener('change', (e) => {
   }
 });
 
-if (startBtn) {
-  startBtn.addEventListener('click', () => {
-    const v = getSelectedSource();
-    const idVal = (sourceIdInput?.value || '').trim();
-    if (!v || !idVal) {
-      alert('Please select an option and enter your code/ID.');
-      return;
-    }
-    sourceType = v;
-    sourceId = idVal;
-    if (landingPanel) landingPanel.hidden = true;
-    const mainHeader = document.getElementById('main-header');
-    if (mainHeader) mainHeader.hidden = false;
-    if (instructionsPanel) instructionsPanel.hidden = false;
-  });
-}
-
 if (instructionsBtn) {
   instructionsBtn.addEventListener('click', () => {
     if (instructionsPanel) instructionsPanel.hidden = true;
@@ -1943,6 +1927,82 @@ if (consentDeclineBtn) {
   consentDeclineBtn.addEventListener('click', () => {
     alert('You must agree to participate to continue with this study. Thank you for your interest.');
     window.location.reload();
+  });
+}
+
+// PDF Download functionality
+if (downloadConsentPdfBtn) {
+  downloadConsentPdfBtn.addEventListener('click', async () => {
+    try {
+      // Disable button during generation
+      downloadConsentPdfBtn.disabled = true;
+      downloadConsentPdfBtn.textContent = 'Generating PDF...';
+
+      // Create a temporary container for PDF content
+      const pdfContainer = document.createElement('div');
+      pdfContainer.style.padding = '20px';
+      pdfContainer.style.backgroundColor = 'white';
+      pdfContainer.style.color = 'black';
+      pdfContainer.style.fontFamily = 'Arial, sans-serif';
+      pdfContainer.style.fontSize = '12px';
+      pdfContainer.style.lineHeight = '1.6';
+
+      // Page 1: Landing/Source ID
+      const page1 = document.createElement('div');
+      page1.style.marginBottom = '40px';
+      page1.innerHTML = `
+        <h1 style="font-size: 20px; margin-bottom: 10px;">WhatsApp Guidelines Evaluation</h1>
+        <p style="margin-bottom: 10px;"><strong>Participant Information</strong></p>
+        <p style="margin-bottom: 5px;">Source: ${sourceType || 'Not specified'}</p>
+        <p style="margin-bottom: 5px;">ID/Code: ${sourceId || 'Not specified'}</p>
+        <p style="margin-bottom: 5px;">Date: ${new Date().toLocaleDateString()}</p>
+      `;
+
+      // Page 2: Consent Form - clone and clean
+      const consentClone = consentPanel.cloneNode(true);
+      // Remove buttons from clone
+      const buttonsInClone = consentClone.querySelectorAll('button');
+      buttonsInClone.forEach(btn => btn.remove());
+      // Remove checkboxes (show as checked text instead)
+      const checkboxLabels = consentClone.querySelectorAll('.options label');
+      checkboxLabels.forEach(label => {
+        const checkbox = label.querySelector('input[type="checkbox"]');
+        if (checkbox) {
+          const isChecked = checkbox.checked;
+          checkbox.remove();
+          label.innerHTML = (isChecked ? '☑ ' : '☐ ') + label.textContent;
+        }
+      });
+
+      pdfContainer.appendChild(page1);
+      pdfContainer.appendChild(consentClone);
+
+      // Temporarily add to body (hidden)
+      pdfContainer.style.position = 'absolute';
+      pdfContainer.style.left = '-9999px';
+      document.body.appendChild(pdfContainer);
+
+      // Generate PDF
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: `WhatsApp_Study_Consent_${sourceId || 'participant'}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      await html2pdf().set(opt).from(pdfContainer).save();
+
+      // Clean up
+      document.body.removeChild(pdfContainer);
+      downloadConsentPdfBtn.disabled = false;
+      downloadConsentPdfBtn.textContent = 'Download PDF Copy';
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      alert('Failed to generate PDF. Please try using your browser\'s print function (Ctrl+P or Cmd+P) to save as PDF.');
+      downloadConsentPdfBtn.disabled = false;
+      downloadConsentPdfBtn.textContent = 'Download PDF Copy';
+    }
   });
 }
 

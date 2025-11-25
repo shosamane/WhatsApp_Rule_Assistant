@@ -86,7 +86,10 @@
         <button id="consent-decline-btn" class="primary outline" style="background: transparent; color: var(--error); border-color: var(--error);">I DO NOT WISH TO PARTICIPATE</button>
       </div>
 
-      <p style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--muted);">Save or print this form for your records</p>
+      <p style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--muted);">
+        Save or print this form for your records.
+        <button id="download-consent-pdf" class="primary outline" style="margin-top: 0.5rem;">Download PDF Copy</button>
+      </p>
     </section>
 
     <section class="panel" id="instructions-panel" hidden>
@@ -328,6 +331,7 @@
   </template>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" crossorigin="anonymous"></script>
   <script type="module" src="app.js"></script>
 </body>
 </html>
