@@ -421,6 +421,13 @@ input:focus {
   font-weight: 600;
 }
 
+.consent-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
 @media (max-width: 600px) {
   .panel {
     padding: 1.25rem;
@@ -428,5 +435,13 @@ input:focus {
 
   .ranking-layout {
     grid-template-columns: 1fr;
+  }
+
+  .consent-buttons {
+    flex-direction: column;
+  }
+
+  .consent-buttons button {
+    width: 100%;
   }
 }

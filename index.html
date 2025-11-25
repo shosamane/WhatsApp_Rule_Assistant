@@ -29,8 +29,68 @@
       <button id="start-btn" class="primary" disabled>Continue</button>
     </section>
 
+    <section class="panel" id="consent-panel" hidden>
+      <h2>CONSENT TO PARTICIPATE IN RESEARCH</h2>
+      <h3 style="margin-top: 0.5rem;">Helping Admins Write Grounded Rules for WhatsApp Groups</h3>
+
+      <p><strong>Principal Investigators:</strong> Kiran Garimella, PhD (Rutgers University) and Aditya Vashistha, PhD (Cornell University)</p>
+      <p>This form describes a research study. Please read carefully and ask questions before deciding whether to participate. Participation is voluntary.</p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">PURPOSE</h4>
+      <p>This research examines how people evaluate content moderation rules for WhatsApp groups. Your responses will help improve online community governance tools.</p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">PROCEDURES</h4>
+      <p>If you agree to participate, you will complete a single 25-30 minute online session:</p>
+      <ol>
+        <li>Answer questions about your background</li>
+        <li>Upload a WhatsApp chat export from one of your groups. Personal information is removed on your device before transmission</li>
+        <li>Review 15 moderation rules and rank them by preference</li>
+        <li>Answer questions about your experience</li>
+      </ol>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">ELIGIBILITY</h4>
+      <p>You must be: 18+ years old, residing in India, fluent in English, an active WhatsApp group member with ability to export chat history.</p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">RISKS</h4>
+      <p>Risks are minimal. Your WhatsApp chat is anonymized on your device before transmission, encrypted during transfer, and immediately deleted after processing. You may experience mild discomfort reviewing your chat content. You can withdraw anytime.</p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">BENEFITS</h4>
+      <p>No direct benefits. Your participation contributes to research on online community governance.</p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">COMPENSATION</h4>
+      <p>You will receive $2.5 USD via Prolific/Clickworker upon completion. Pro-rated payment if you withdraw early.</p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">CONFIDENTIALITY</h4>
+      <p>Your identity is protected. We collect only anonymous platform IDs, no names or emails. All data is encrypted and stored on secure Rutgers servers. Only the 4-person research team has access. Results are reported in aggregate only. Data retained for 3 years per university policy, then deleted.</p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">VOLUNTARY PARTICIPATION</h4>
+      <p>Participation is voluntary. You may withdraw anytime by closing your browser without penalty.</p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">QUESTIONS</h4>
+      <p>Study questions: Sudhamshu Hosamane [sh1779@scarletmail.rutgers.edu] or Farhana Shahid [fs468@cornell.edu]</p>
+      <p>Learn more about IRB practices and privacy: IRBOffice@research.rutgers.edu or irbhp@cornell.edu</p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">CONSENT</h4>
+      <p><strong>Check all boxes to confirm:</strong></p>
+
+      <div class="options">
+        <label><input type="checkbox" id="consent-read" /> I have read this form and understand the study</label>
+        <label><input type="checkbox" id="consent-age" /> I am 18 years or older</label>
+        <label><input type="checkbox" id="consent-voluntary" /> I understand participation is voluntary and I can withdraw anytime</label>
+        <label><input type="checkbox" id="consent-confidential" /> I understand my data will be anonymized and kept confidential</label>
+        <label><input type="checkbox" id="consent-agree" /> I voluntarily agree to participate</label>
+      </div>
+
+      <div class="consent-buttons">
+        <button id="consent-agree-btn" class="primary" disabled>I AGREE TO PARTICIPATE</button>
+        <button id="consent-decline-btn" class="primary outline" style="background: transparent; color: var(--error); border-color: var(--error);">I DO NOT WISH TO PARTICIPATE</button>
+      </div>
+
+      <p style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--muted);">Save or print this form for your records</p>
+    </section>
+
     <section class="panel" id="instructions-panel" hidden>
-      <p>We’ll generate draft guidelines from your group’s chat. Your chat is processed on your device. Only pseudonymous sender labels (User 01, User 02, …) are included in any analysis.</p>
+      <p>We'll generate draft guidelines from your group's chat. Your chat is processed on your device. Only pseudonymous sender labels (User 01, User 02, …) are included in any analysis.</p>
       <button id="instructions-btn" class="primary">Next</button>
     </section>
 

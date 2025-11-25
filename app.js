@@ -20,11 +20,19 @@ const loadingSpinner = loadingBox?.querySelector(".spinner") || null;
 const loadingText = loadingBox?.querySelector(".loading-text") || null;
 // Landing / instructions / upload elements
 const landingPanel = document.getElementById("landing-panel");
+const consentPanel = document.getElementById("consent-panel");
 const instructionsPanel = document.getElementById("instructions-panel");
 const uploadPanel = document.getElementById("upload-panel");
 const groupPanel = document.getElementById("group-panel");
 const generationPanel = document.getElementById("generation-panel");
 const startBtn = document.getElementById("start-btn");
+const consentAgreeBtn = document.getElementById("consent-agree-btn");
+const consentDeclineBtn = document.getElementById("consent-decline-btn");
+const consentRead = document.getElementById("consent-read");
+const consentAge = document.getElementById("consent-age");
+const consentVoluntary = document.getElementById("consent-voluntary");
+const consentConfidential = document.getElementById("consent-confidential");
+const consentAgree = document.getElementById("consent-agree");
 const instructionsBtn = document.getElementById("instructions-btn");
 const approveBtn = document.getElementById("approve-btn");
 const transcriptPreview = document.getElementById("transcript-preview");
@@ -58,6 +66,8 @@ let loadingResetTimer = null;
 let originalsById = new Map();
 let meetsActivityCriteria = true;
 let wasDragging = false;
+let consentGiven = false;
+let consentTimestamp = null;
 let consentApproved = false;
 let pseudoMap = new Map();
 let sourceType = null;
@@ -1709,6 +1719,15 @@ function buildSubmissionPayload({ rankedWithOrder, genericSelections, contextual
     sessionId,
     sourceType,
     sourceId,
+    consent: {
+      given: consentGiven,
+      timestamp: consentTimestamp,
+      readForm: consentRead?.checked || false,
+      ageConfirmed: consentAge?.checked || false,
+      voluntaryUnderstood: consentVoluntary?.checked || false,
+      confidentialityUnderstood: consentConfidential?.checked || false,
+      agreeToParticipate: consentAgree?.checked || false,
+    },
     demographics: {
       age: demoAge?.value || '',
       gender: demoGender?.value || '',
@@ -1885,6 +1904,48 @@ function updateApproveButtonState() {
   }
 });
 
+// Consent form validation and navigation
+function updateConsentButtonState() {
+  if (!consentAgreeBtn) return;
+  const allChecked = consentRead?.checked && consentAge?.checked &&
+                     consentVoluntary?.checked && consentConfidential?.checked &&
+                     consentAgree?.checked;
+  consentAgreeBtn.disabled = !allChecked;
+}
+
+// Add event listeners to consent checkboxes
+[consentRead, consentAge, consentVoluntary, consentConfidential, consentAgree].forEach(checkbox => {
+  if (checkbox) {
+    checkbox.addEventListener('change', updateConsentButtonState);
+  }
+});
+
+// Landing page: Start button navigation
+if (startBtn) {
+  startBtn.addEventListener('click', () => {
+    if (landingPanel) landingPanel.hidden = true;
+    if (consentPanel) consentPanel.hidden = false;
+  });
+}
+
+// Consent page: Agree button
+if (consentAgreeBtn) {
+  consentAgreeBtn.addEventListener('click', () => {
+    consentGiven = true;
+    consentTimestamp = new Date().toISOString();
+    if (consentPanel) consentPanel.hidden = true;
+    if (instructionsPanel) instructionsPanel.hidden = false;
+  });
+}
+
+// Consent page: Decline button
+if (consentDeclineBtn) {
+  consentDeclineBtn.addEventListener('click', () => {
+    alert('You must agree to participate to continue with this study. Thank you for your interest.');
+    window.location.reload();
+  });
+}
+
 // Initialize page state - ensure only landing panel is visible
 (function initializePageState() {
   // Hide header initially
@@ -1893,6 +1954,7 @@ function updateApproveButtonState() {
 
   // Show only landing panel
   if (landingPanel) landingPanel.hidden = false;
+  if (consentPanel) consentPanel.hidden = true;
   if (instructionsPanel) instructionsPanel.hidden = true;
   if (uploadPanel) uploadPanel.hidden = true;
   if (groupPanel) groupPanel.hidden = true;
