@@ -81,17 +81,39 @@ app.post(`${base}/api/generate`, async (req, res) => {
 app.post(`${base}/api/store`, async (req, res) => {
   try {
     const payload = req.body || {};
-    // Basic sanity: require a sessionId and createdAt
+    // Basic sanity: require a sessionId
     if (!payload.sessionId) return res.status(400).json({ error: 'missing_sessionId' });
-    if (!payload.createdAt) payload.createdAt = new Date().toISOString();
-    payload.serverReceivedAt = new Date().toISOString();
+
+    const sessionId = payload.sessionId;
+    const now = new Date().toISOString();
+
+    // Set timestamps
+    if (!payload.createdAt) payload.createdAt = now;
+    payload.updatedAt = now;
+    payload.serverReceivedAt = now;
     payload.remote = { ip: req.ip };
 
     const client = await getMongo();
     const db = client.db(mongoDbName);
     const coll = db.collection(mongoColl);
-    const result = await coll.insertOne(payload);
-    return res.json({ ok: true, id: String(result.insertedId) });
+
+    // Use updateOne with upsert to update existing document or create new one
+    const result = await coll.updateOne(
+      { sessionId: sessionId },
+      {
+        $set: payload,
+        $setOnInsert: { createdAt: payload.createdAt }
+      },
+      { upsert: true }
+    );
+
+    return res.json({
+      ok: true,
+      sessionId: sessionId,
+      matched: result.matchedCount,
+      modified: result.modifiedCount,
+      upserted: result.upsertedCount
+    });
   } catch (err) {
     console.error('store error', err);
     if (/mongodb driver not installed/i.test(String(err))) {

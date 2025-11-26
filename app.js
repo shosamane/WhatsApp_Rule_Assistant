@@ -1602,96 +1602,17 @@ submitRankingsBtn.addEventListener("click", () => {
   const contextualProportion = ((contextualCount / totalSelected) * 100).toFixed(1);
   const metadataProportion = ((metadataCount / totalSelected) * 100).toFixed(1);
 
+  // Don't display results to user - only store in database
+  rankingSummary.hidden = true;
+
+  // After storing results, show simple confirmation message
   rankingSummary.innerHTML = "";
-
-  const heading = document.createElement("p");
-  const strong = document.createElement("strong");
-  strong.textContent = "Your selected rules";
-  heading.appendChild(strong);
-
-  const list = document.createElement("pre");
-  list.textContent = selectedRules
-    .map((item) => `• ${item.rule.text}`)
-    .join("\n");
-
-  const genericSelectionsLine = document.createElement("p");
-  genericSelectionsLine.textContent = `Generic rules selected: ${genericCount}`;
-
-  const contextualSelectionsLine = document.createElement("p");
-  contextualSelectionsLine.textContent = `Contextual rules selected: ${contextualCount}`;
-
-  const metadataSelectionsLine = document.createElement("p");
-  metadataSelectionsLine.textContent = `Metadata-only rules selected: ${metadataCount}`;
-
-  const genericLine = document.createElement("p");
-  genericLine.textContent = `Generic: ${genericCount}/${totalSelected} (${genericProportion}%)`;
-
-  const contextualLine = document.createElement("p");
-  contextualLine.textContent = `Contextual: ${contextualCount}/${totalSelected} (${contextualProportion}%)`;
-
-  const metadataLine = document.createElement("p");
-  metadataLine.textContent = `Metadata-only: ${metadataCount}/${totalSelected} (${metadataProportion}%)`;
-
-  rankingSummary.append(
-    heading,
-    list,
-    genericSelectionsLine,
-    contextualSelectionsLine,
-    metadataSelectionsLine,
-    genericLine,
-    contextualLine,
-    metadataLine,
-  );
+  const confirmMsg = document.createElement("p");
+  confirmMsg.innerHTML = "<strong>Thank you!</strong> Your selection has been submitted successfully.";
+  rankingSummary.appendChild(confirmMsg);
   rankingSummary.hidden = false;
 
-  // Merged rules (all) section is rendered below; ranked-only breakdown removed per request
-
-  // Print all merged rules with their originating rules and counts, regardless of ranking
-  try {
-    const uniqCount = allRules.length;
-    const origCount = originalsById.size; // expected 18
-    const mergedAway = Math.max(0, origCount - uniqCount);
-
-    const allHeading = document.createElement("p");
-    const strong3 = document.createElement("strong");
-    strong3.textContent = "Merged rules (all)";
-    allHeading.appendChild(strong3);
-    rankingSummary.append(allHeading);
-
-    const statsLine = document.createElement("p");
-    statsLine.textContent = `Original rules: ${origCount}. Unique after merge: ${uniqCount}. Total merged: ${mergedAway}.`;
-    rankingSummary.append(statsLine);
-
-    allRules.forEach((rule, idx) => {
-      const block = document.createElement("div");
-      const title = document.createElement("p");
-      const reason = rule.reason ? ` (Reason: ${rule.reason})` : "";
-      title.textContent = `${idx + 1}. ${rule.text}${reason}`;
-      block.appendChild(title);
-
-      if (Array.isArray(rule.origIds) && rule.origIds.length) {
-        const ul = document.createElement("ul");
-        rule.origIds.forEach((oid) => {
-          const li = document.createElement("li");
-          const orig = originalsById.get(oid);
-          if (orig) {
-            const parts = [`[${orig.source}]`, orig.text];
-            if (orig.reason) parts.push(`— ${orig.reason}`);
-            li.textContent = parts.join(" ");
-          } else {
-            li.textContent = `${oid} (original not available)`;
-          }
-          ul.appendChild(li);
-        });
-        block.appendChild(ul);
-      }
-      rankingSummary.append(block);
-    });
-  } catch (e) {
-    console.error("Failed to build merged all-rules list", e);
-  }
-
-  // After rendering results, store the submission (non-blocking)
+  // Store the submission (non-blocking) - all data including breakdown is saved to DB
   try {
     const payload = buildSubmissionPayload({ selectedRules, genericSelections, contextualSelections, metadataSelections });
     storeSubmission(payload).catch((e) => console.error('Store failed', e));
