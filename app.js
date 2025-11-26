@@ -2041,6 +2041,7 @@ async function storeSubmission(data) {
 // Save incremental progress after each page
 async function saveProgress(pageName) {
   try {
+    console.log(`[saveProgress] Starting save for page: ${pageName}`);
     const sessionId = getOrCreateSessionId();
     const payload = {
       sessionId,
@@ -2111,10 +2112,11 @@ async function saveProgress(pageName) {
       };
     }
 
-    await storeSubmission(payload);
-    console.log(`Progress saved: ${pageName}`);
+    console.log(`[saveProgress] Payload for ${pageName}:`, { sessionId: payload.sessionId, pageName: payload.pageName, progressStatus: payload.progressStatus });
+    const result = await storeSubmission(payload);
+    console.log(`[saveProgress] Success for ${pageName}:`, result);
   } catch (error) {
-    console.error(`Failed to save progress for ${pageName}:`, error);
+    console.error(`[saveProgress] FAILED for ${pageName}:`, error);
     // Don't block user progress if save fails
   }
 }
