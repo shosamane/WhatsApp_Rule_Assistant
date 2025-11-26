@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MongoDB Test</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+    .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    pre { background: #f4f4f4; padding: 10px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>MongoDB Connection Test</h1>
+  <button id="test-btn">Test MongoDB Connection</button>
+  <div id="results"></div>
+
+  <script>
+    const resultsDiv = document.getElementById('results');
+    const testBtn = document.getElementById('test-btn');
+
+    function addResult(message, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `result ${type}`;
+      div.innerHTML = message;
+      resultsDiv.appendChild(div);
+    }
+
+    testBtn.addEventListener('click', async () => {
+      resultsDiv.innerHTML = '';
+      addResult('Starting tests...', 'info');
+
+      // Test 1: Check if API endpoint is reachable
+      try {
+        addResult('Test 1: Checking if /webhook3/api/store endpoint is reachable...', 'info');
+        const testPayload = {
+          sessionId: 'test-' + Date.now(),
+          pageName: 'test',
+          timestamps: {},
+          sourceType: 'test',
+          sourceId: 'test',
+          consent: null,
+          demographics: null,
+          transcript: null,
+          groupType: null,
+          updatedAt: new Date().toISOString(),
+          progressStatus: 'test'
+        };
+
+        const response = await fetch('/webhook3/api/store', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(testPayload),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          addResult(`✓ API endpoint is reachable! Response: <pre>${JSON.stringify(data, null, 2)}</pre>`, 'success');
+        } else {
+          const errorText = await response.text();
+          addResult(`✗ API endpoint returned error ${response.status}: <pre>${errorText}</pre>`, 'error');
+        }
+      } catch (error) {
+        addResult(`✗ Failed to reach API endpoint: ${error.message}`, 'error');
+      }
+
+      // Test 2: Check if sessionStorage works
+      try {
+        addResult('Test 2: Checking sessionStorage...', 'info');
+        const testKey = 'test_key';
+        const testValue = 'test_value_' + Date.now();
+        sessionStorage.setItem(testKey, testValue);
+        const retrieved = sessionStorage.getItem(testKey);
+        if (retrieved === testValue) {
+          addResult('✓ sessionStorage is working', 'success');
+        } else {
+          addResult('✗ sessionStorage is not working correctly', 'error');
+        }
+      } catch (error) {
+        addResult(`✗ sessionStorage error: ${error.message}`, 'error');
+      }
+
+      // Test 3: Check console for errors
+      addResult('Test 3: Check your browser console (F12) for any JavaScript errors', 'info');
+
+      // Test 4: Instructions
+      addResult('<strong>Next steps:</strong><br>1. Check server logs: <code>journalctl -u webhook3 -n 50</code> or <code>pm2 logs</code><br>2. Check if Node server is running: <code>ps aux | grep server.js</code><br>3. Check if MongoDB is running: <code>sudo systemctl status mongod</code><br>4. Check MongoDB connection: <code>mongosh --eval "db.adminCommand({ ping: 1 })"</code>', 'info');
+    });
+  </script>
+</body>
+</html>
