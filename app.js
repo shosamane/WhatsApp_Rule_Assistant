@@ -1663,7 +1663,7 @@ function selectUnselectedRules() {
   return selected;
 }
 
-submitRankingsBtn.addEventListener("click", () => {
+submitRankingsBtn.addEventListener("click", async () => {
   rankingError.textContent = "";
 
   if (!allRules.length) {
@@ -1697,6 +1697,9 @@ submitRankingsBtn.addEventListener("click", () => {
   // Record timestamp for rankings submitted
   timestamps.rankingsSubmitted = new Date().toISOString();
 
+  // Save progress to MongoDB
+  await saveProgress('rankingsSubmitted');
+
   // Navigate to first non-selection panel
   if (rankingPanel) rankingPanel.hidden = true;
   if (nonSelectionPanel1) nonSelectionPanel1.hidden = false;
@@ -1724,7 +1727,7 @@ function validateNonSelectionForm(panelNumber) {
 
 // Non-selection panel 1 - Next button
 if (nonSelectionNext1) {
-  nonSelectionNext1.addEventListener('click', () => {
+  nonSelectionNext1.addEventListener('click', async () => {
     if (!validateNonSelectionForm(1)) {
       alert('Please answer all questions before continuing.');
       return;
@@ -1750,6 +1753,9 @@ if (nonSelectionNext1) {
       otherReason: document.getElementById('ns1-other-reason')?.value || ''
     };
 
+    // Save progress to MongoDB
+    await saveProgress('nonSelection1');
+
     // Populate the second non-selection panel
     const rule2 = unselectedRulesForQuestionnaire[1];
     document.getElementById('non-selection-rule-text-2').textContent = rule2.text;
@@ -1768,7 +1774,7 @@ if (nonSelectionNext1) {
 
 // Non-selection panel 2 - Next button
 if (nonSelectionNext2) {
-  nonSelectionNext2.addEventListener('click', () => {
+  nonSelectionNext2.addEventListener('click', async () => {
     if (!validateNonSelectionForm(2)) {
       alert('Please answer all questions before continuing.');
       return;
@@ -1794,6 +1800,9 @@ if (nonSelectionNext2) {
       otherReason: document.getElementById('ns2-other-reason')?.value || ''
     };
 
+    // Save progress to MongoDB
+    await saveProgress('nonSelection2');
+
     // Populate the third non-selection panel
     const rule3 = unselectedRulesForQuestionnaire[2];
     document.getElementById('non-selection-rule-text-3').textContent = rule3.text;
@@ -1812,7 +1821,7 @@ if (nonSelectionNext2) {
 
 // Non-selection panel 3 - Next button (goes to demographics)
 if (nonSelectionNext3) {
-  nonSelectionNext3.addEventListener('click', () => {
+  nonSelectionNext3.addEventListener('click', async () => {
     if (!validateNonSelectionForm(3)) {
       alert('Please answer all questions before continuing.');
       return;
@@ -1837,6 +1846,9 @@ if (nonSelectionNext3) {
       likedOthers: getRadioValue('ns3-liked-others'),
       otherReason: document.getElementById('ns3-other-reason')?.value || ''
     };
+
+    // Save progress to MongoDB
+    await saveProgress('nonSelection3');
 
     // Navigate to demographics panel
     if (nonSelectionPanel3) nonSelectionPanel3.hidden = true;
@@ -2065,6 +2077,39 @@ async function saveProgress(pageName) {
       updatedAt: new Date().toISOString(),
       progressStatus: pageName
     };
+
+    // Include generated rules if available
+    if (lastGenerated) {
+      payload.generated = {
+        generic: lastGenerated.generic || [],
+        contextual: lastGenerated.contextual || [],
+        metadata: lastGenerated.metadata || [],
+        merged: lastGenerated.merged || [],
+      };
+      payload.stats = lastGenerated.stats || null;
+    }
+
+    // Include selected rules if available
+    if (rankedRules && rankedRules.length > 0) {
+      const selectedRules = rankedRules.map((rule) => ({
+        text: rule.text,
+        reason: rule.reason,
+        sources: rule.sources || [rule.source],
+        origIds: rule.origIds || [],
+      }));
+      payload.selection = {
+        selected: selectedRules,
+      };
+    }
+
+    // Include non-selection responses if available
+    if (Object.keys(nonSelectionResponses).length > 0) {
+      payload.nonSelection = {
+        rule1: nonSelectionResponses.rule1 || null,
+        rule2: nonSelectionResponses.rule2 || null,
+        rule3: nonSelectionResponses.rule3 || null,
+      };
+    }
 
     await storeSubmission(payload);
     console.log(`Progress saved: ${pageName}`);
