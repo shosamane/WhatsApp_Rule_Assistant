@@ -97,12 +97,15 @@ app.post(`${base}/api/store`, async (req, res) => {
     const db = client.db(mongoDbName);
     const coll = db.collection(mongoColl);
 
+    // Extract createdAt to avoid conflict between $set and $setOnInsert
+    const { createdAt, ...updateFields } = payload;
+
     // Use updateOne with upsert to update existing document or create new one
     const result = await coll.updateOne(
       { sessionId: sessionId },
       {
-        $set: payload,
-        $setOnInsert: { createdAt: payload.createdAt }
+        $set: updateFields,
+        $setOnInsert: { createdAt: createdAt || now }
       },
       { upsert: true }
     );
