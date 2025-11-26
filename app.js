@@ -80,7 +80,19 @@ let deviceType = null;
 let transcriptMeta = null;
 let rulesGenerated = false;
 
-const MAX_SELECTED_RULES = 7;
+// Timestamps for tracking progress through pages
+let timestamps = {
+  sessionStart: new Date().toISOString(),
+  landingComplete: null,
+  consentComplete: null,
+  instructionsComplete: null,
+  uploadComplete: null,
+  groupTypeComplete: null,
+  rulesGenerated: null,
+  rankingsSubmitted: null
+};
+
+const MAX_SELECTED_RULES = 5;
 const MAX_CONTEXT_CHARS = 300000;
 const DRAG_RULE_ID = "text/x-rule-id";
 const DRAG_RULE_SOURCE = "text/x-rule-source";
@@ -135,7 +147,7 @@ function setLoadingState(state) {
   }
 }
 
-rankedList.dataset.emptyMessage = "Drag rules here to rank them (max 7).";
+rankedList.dataset.emptyMessage = "Drag rules here to select them (max 5).";
 availableList.dataset.emptyMessage = "Generate rules to begin.";
 rankedList.classList.add("empty");
 availableList.classList.add("empty");
@@ -143,7 +155,7 @@ const initialDropZoneMarkup = dropZone.innerHTML;
 
 const GENERIC_PROMPT_TEMPLATE = ({ groupType }) => `You are assisting with the generation of governance guidelined for WhatsApp groups.
 
-Task: Provide exactly six governance guidelines that would be suitable for a WhatsApp group categorised as "${groupType}". Each rule must be a single, self-contained statement (one short self-contained sentence) describing the expectation or restriction. For each rule, also provide a short "reason" sentence.
+Task: Provide exactly five governance guidelines that would be suitable for a WhatsApp group categorised as "${groupType}". Each rule must be a single, self-contained statement (one short self-contained sentence) describing the expectation or restriction. For each rule, also provide a short "reason" sentence.
 
 Requirements:
 - Balance prescriptive guidance (what members should do) and restrictive guidance (what members must avoid).
@@ -197,7 +209,7 @@ Context summary:
 Below is a transcript excerpt containing the most recent ${messages.length} rows from the selected window. Each row is JSON with timestamp, sender, mediaType (text|image|video|audio|document|link|system), and content. Use it extensively to understand recurring topics, conflicts, and norms.
 ${messagesBlock}
 
-Task: Create exactly six different governance rules tailored to the observed behaviours. Express each rule as a single, self-contained statement (one short self-contained sentence) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
+Task: Create exactly five different governance rules tailored to the observed behaviours. Express each rule as a single, self-contained statement (one short self-contained sentence) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
 
 Requirements:
 - Each rule must be grounded in patterns surfaced by the transcript, but do not mention the transcript, chat logs, participants, or the analysis process. Do not write "this group" or otherwise reveal that these rules come from a specific dataset.
@@ -271,7 +283,7 @@ Context summary (no message content provided):
 Below is a transcript excerpt where each row is JSON with timestamp, sender, mediaType, and a content object that contains only metadata (word and character counts for text/link/system/deleted messages; and mediaType plus filename when available for media messages). No raw message text or URLs are included.
 ${messagesBlock}
 
-Task: Create exactly six governance rules based only on these metadata signals that you think are the most relevant or important. Express each rule as a single, self-contained statement (one short self-contained sentence) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
+Task: Create exactly five governance rules based only on these metadata signals that you think are the most relevant or important. Express each rule as a single, self-contained statement (one short self-contained sentence) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
 
 Requirements:
 - Do not infer or reference any specific message content, quotes, or topics. Base rules solely on activity patterns and metadata.
@@ -822,7 +834,7 @@ function clearRulesUI() {
   availableList.innerHTML = "";
   rankedList.classList.add("empty");
   availableList.classList.add("empty");
-  rankedList.dataset.emptyMessage = "Drag rules here to rank them (max 7).";
+  rankedList.dataset.emptyMessage = "Drag rules here to select them (max 5).";
   availableList.dataset.emptyMessage = "Generate rules to begin.";
   rankingPanel.hidden = true;
   rankingSummary.hidden = true;
@@ -1091,7 +1103,7 @@ function renderRuleLists() {
 
   if (rankingNote) {
     if (allRules.length) {
-      rankingNote.textContent = "Rank the rules you would set for your group from the suggestions below.";
+      rankingNote.textContent = "Select the rules you would set for your group from the suggestions below.";
       rankingNote.hidden = false;
     } else {
       rankingNote.hidden = true;
@@ -1104,16 +1116,16 @@ function renderRuleLists() {
 
   rankedList.dataset.emptyMessage = rankedRules.length
     ? ""
-    : "Drag rules here to rank them (max 7).";
+    : "Drag rules here to select them (max 5).";
   availableList.dataset.emptyMessage = availableRules.length
     ? ""
-    : "All rules have been ranked.";
+    : "All rules have been selected.";
 
   rankedList.classList.toggle("empty", rankedRules.length === 0);
   availableList.classList.toggle("empty", availableRules.length === 0);
 
-  rankedRules.forEach((rule, index) => {
-    rankedList.appendChild(createRuleCard(rule, { isRanked: true, rank: index + 1 }));
+  rankedRules.forEach((rule) => {
+    rankedList.appendChild(createRuleCard(rule, { isRanked: true }));
   });
 
   availableRules.forEach((rule) => {
@@ -1122,7 +1134,7 @@ function renderRuleLists() {
 }
 
 function createRuleCard(rule, options) {
-  const { isRanked, rank } = options;
+  const { isRanked } = options;
   const fragment = ruleCardTemplate.content.cloneNode(true);
   const card = fragment.firstElementChild;
   const rankEl = card.querySelector(".rule-rank");
@@ -1142,14 +1154,17 @@ function createRuleCard(rule, options) {
   card.dataset.ruleId = rule.id;
   card.dataset.list = isRanked ? "ranked" : "available";
 
+  // Hide rank element (no ranking, just selection)
+  if (rankEl) {
+    rankEl.style.display = "none";
+  }
+
   if (isRanked) {
     card.classList.add("is-ranked");
-    rankEl.textContent = String(rank);
-    const aria = rule.reason ? `Rank ${rank}: ${rule.text}. Reason: ${rule.reason}` : `Rank ${rank}: ${rule.text}`;
+    const aria = rule.reason ? `Selected: ${rule.text}. Reason: ${rule.reason}` : `Selected: ${rule.text}`;
     card.setAttribute("aria-label", aria);
   } else {
     card.classList.remove("is-ranked");
-    rankEl.textContent = "";
     const aria = rule.reason ? `${rule.text}. Reason: ${rule.reason}` : rule.text;
     card.setAttribute("aria-label", aria);
   }
@@ -1158,31 +1173,7 @@ function createRuleCard(rule, options) {
   card.addEventListener("dragend", handleDragEnd);
   card.addEventListener("click", handleCardClick);
 
-  if (isRanked) {
-    const actions = document.createElement("div");
-    actions.className = "rule-actions";
-    const upBtn = document.createElement("button");
-    upBtn.type = "button";
-    upBtn.className = "rule-action rule-action-up";
-    upBtn.setAttribute("aria-label", "Move up");
-    upBtn.textContent = "▲";
-    upBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      moveRankedBy(rule.id, -1);
-    });
-    const downBtn = document.createElement("button");
-    downBtn.type = "button";
-    downBtn.className = "rule-action rule-action-down";
-    downBtn.setAttribute("aria-label", "Move down");
-    downBtn.textContent = "▼";
-    downBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      moveRankedBy(rule.id, +1);
-    });
-    actions.append(upBtn, downBtn);
-    card.appendChild(actions);
-  }
-
+  // No reordering buttons needed for simple selection
   return card;
 }
 
@@ -1215,7 +1206,7 @@ function handleCardClick(event) {
   if (!ruleId || !list) return;
   if (list === "available") {
     if (rankedRules.length >= MAX_SELECTED_RULES) {
-      rankingError.textContent = `You can rank up to ${MAX_SELECTED_RULES} rules.`;
+      rankingError.textContent = `You can select up to ${MAX_SELECTED_RULES} rules.`;
       return;
     }
     addRuleToRanked(ruleId, rankedRules.length);
@@ -1307,7 +1298,7 @@ function reorderRankedRule(ruleId, targetIndex) {
 
 function addRuleToRanked(ruleId, targetIndex) {
   if (rankedRules.length >= MAX_SELECTED_RULES) {
-    rankingError.textContent = `You can rank up to ${MAX_SELECTED_RULES} rules.`;
+    rankingError.textContent = `You can select up to ${MAX_SELECTED_RULES} rules.`;
     return;
   }
 
@@ -1556,6 +1547,10 @@ generateBtn.addEventListener("click", async () => {
     if (proceedInstruction) {
       proceedInstruction.hidden = false;
     }
+
+    // Record timestamp and save progress
+    timestamps.rulesGenerated = new Date().toISOString();
+    await saveProgress('generation');
   } catch (error) {
     console.error(error);
     errorBox.textContent = error.message;
@@ -1577,68 +1572,65 @@ submitRankingsBtn.addEventListener("click", () => {
   rankingError.textContent = "";
 
   if (!allRules.length) {
-    rankingError.textContent = "Generate rules before submitting rankings.";
+    rankingError.textContent = "Generate rules before submitting your selection.";
     return;
   }
 
   if (!rankedRules.length) {
-    rankingError.textContent = "Drag at least one rule into the ranking zone.";
+    rankingError.textContent = "Select at least one rule.";
     return;
   }
 
-  const rankedWithOrder = rankedRules.map((rule, index) => ({
-    rule,
-    rank: index + 1,
-  }));
-  const totalRanked = rankedWithOrder.length;
+  const selectedRules = rankedRules.map((rule) => ({ rule }));
+  const totalSelected = selectedRules.length;
 
   const hasSrc = (rule, type) => Array.isArray(rule.sources) ? rule.sources.includes(type) : rule.source === type;
-  const genericSelections = rankedWithOrder
+  const genericSelections = selectedRules
     .filter((item) => hasSrc(item.rule, "generic"))
-    .map((item) => `#${item.rank}`);
-  const contextualSelections = rankedWithOrder
+    .map((item) => item.rule.text);
+  const contextualSelections = selectedRules
     .filter((item) => hasSrc(item.rule, "contextual"))
-    .map((item) => `#${item.rank}`);
-  const metadataSelections = rankedWithOrder
+    .map((item) => item.rule.text);
+  const metadataSelections = selectedRules
     .filter((item) => hasSrc(item.rule, "metadata"))
-    .map((item) => `#${item.rank}`);
+    .map((item) => item.rule.text);
 
   const genericCount = genericSelections.length;
   const contextualCount = contextualSelections.length;
   const metadataCount = metadataSelections.length;
-  const genericProportion = ((genericCount / totalRanked) * 100).toFixed(1);
-  const contextualProportion = ((contextualCount / totalRanked) * 100).toFixed(1);
-  const metadataProportion = ((metadataCount / totalRanked) * 100).toFixed(1);
+  const genericProportion = ((genericCount / totalSelected) * 100).toFixed(1);
+  const contextualProportion = ((contextualCount / totalSelected) * 100).toFixed(1);
+  const metadataProportion = ((metadataCount / totalSelected) * 100).toFixed(1);
 
   rankingSummary.innerHTML = "";
 
   const heading = document.createElement("p");
   const strong = document.createElement("strong");
-  strong.textContent = "Top selections";
+  strong.textContent = "Your selected rules";
   heading.appendChild(strong);
 
   const list = document.createElement("pre");
-  list.textContent = rankedWithOrder
-    .map((item) => `#${item.rank} — ${item.rule.text}`)
+  list.textContent = selectedRules
+    .map((item) => `• ${item.rule.text}`)
     .join("\n");
 
   const genericSelectionsLine = document.createElement("p");
-  genericSelectionsLine.textContent = `Generic selections: ${genericSelections.length ? genericSelections.join(", ") : "None"}`;
+  genericSelectionsLine.textContent = `Generic rules selected: ${genericCount}`;
 
   const contextualSelectionsLine = document.createElement("p");
-  contextualSelectionsLine.textContent = `Contextual selections: ${contextualSelections.length ? contextualSelections.join(", ") : "None"}`;
+  contextualSelectionsLine.textContent = `Contextual rules selected: ${contextualCount}`;
 
   const metadataSelectionsLine = document.createElement("p");
-  metadataSelectionsLine.textContent = `Metadata-only selections: ${metadataSelections.length ? metadataSelections.join(", ") : "None"}`;
+  metadataSelectionsLine.textContent = `Metadata-only rules selected: ${metadataCount}`;
 
   const genericLine = document.createElement("p");
-  genericLine.textContent = `Generic rules selected: ${genericCount}/${totalRanked} (${genericProportion}%)`;
+  genericLine.textContent = `Generic: ${genericCount}/${totalSelected} (${genericProportion}%)`;
 
   const contextualLine = document.createElement("p");
-  contextualLine.textContent = `Contextual rules selected: ${contextualCount}/${totalRanked} (${contextualProportion}%)`;
+  contextualLine.textContent = `Contextual: ${contextualCount}/${totalSelected} (${contextualProportion}%)`;
 
   const metadataLine = document.createElement("p");
-  metadataLine.textContent = `Metadata-only rules selected: ${metadataCount}/${totalRanked} (${metadataProportion}%)`;
+  metadataLine.textContent = `Metadata-only: ${metadataCount}/${totalSelected} (${metadataProportion}%)`;
 
   rankingSummary.append(
     heading,
@@ -1701,27 +1693,31 @@ submitRankingsBtn.addEventListener("click", () => {
 
   // After rendering results, store the submission (non-blocking)
   try {
-    const payload = buildSubmissionPayload({ rankedWithOrder, genericSelections, contextualSelections, metadataSelections });
+    const payload = buildSubmissionPayload({ selectedRules, genericSelections, contextualSelections, metadataSelections });
     storeSubmission(payload).catch((e) => console.error('Store failed', e));
   } catch (e) {
     console.error('Failed to build/store submission', e);
   }
 });
 
-function buildSubmissionPayload({ rankedWithOrder, genericSelections, contextualSelections, metadataSelections }) {
+function buildSubmissionPayload({ selectedRules, genericSelections, contextualSelections, metadataSelections }) {
   const sessionId = getOrCreateSessionId();
-  const ranked = rankedWithOrder.map(item => ({
-    rank: item.rank,
+  const selected = selectedRules.map(item => ({
     text: item.rule.text,
     reason: item.rule.reason,
     sources: item.rule.sources || [item.rule.source],
     origIds: item.rule.origIds || [],
   }));
   const previewLines = (transcriptPreview?.textContent || '').split('\n');
+
+  // Set final timestamp
+  timestamps.rankingsSubmitted = new Date().toISOString();
+
   return {
     sessionId,
     sourceType,
     sourceId,
+    timestamps,
     consent: {
       given: consentGiven,
       timestamp: consentTimestamp,
@@ -1758,13 +1754,14 @@ function buildSubmissionPayload({ rankedWithOrder, genericSelections, contextual
       metadata: lastGenerated?.metadata || [],
       merged: lastGenerated?.merged || [],
     },
-    ranking: {
-      ranked,
+    selection: {
+      selected,
       genericSelections,
       contextualSelections,
       metadataSelections,
     },
     createdAt: new Date().toISOString(),
+    progressStatus: 'completed'
   };
 }
 
@@ -1797,6 +1794,54 @@ async function storeSubmission(data) {
   return await resp.json();
 }
 
+// Save incremental progress after each page
+async function saveProgress(pageName) {
+  try {
+    const sessionId = getOrCreateSessionId();
+    const payload = {
+      sessionId,
+      pageName,
+      timestamps,
+      sourceType,
+      sourceId,
+      consent: consentGiven ? {
+        given: consentGiven,
+        timestamp: consentTimestamp,
+        readForm: consentRead?.checked || false,
+        ageConfirmed: consentAge?.checked || false,
+        voluntaryUnderstood: consentVoluntary?.checked || false,
+        confidentialityUnderstood: consentConfidential?.checked || false,
+        agreeToParticipate: consentAgree?.checked || false,
+      } : null,
+      demographics: consentApproved ? {
+        age: demoAge?.value || '',
+        gender: demoGender?.value || '',
+        location: demoLocation?.value || '',
+        languages: demoLanguages?.value || '',
+        education: demoEducation?.value || '',
+        whatsappFrequency: demoWaFrequency?.value || '',
+        whatsappGroups: demoWaGroups?.value || '',
+        whatsappAdminGroups: demoWaAdminGroups?.value || '',
+        moderationExperience: demoModerationExp?.value || '',
+        adminDuration: demoAdminDuration?.value || '',
+        writingConfidence: demoWritingConfidence?.value || '',
+        explanationSkill: demoExplanationSkill?.value || '',
+        attentionCheck: demoAttentionCheck?.value || '',
+      } : null,
+      transcript: transcriptMeta || null,
+      groupType: lastGenerated?.groupType || groupTypeSelect?.value || null,
+      updatedAt: new Date().toISOString(),
+      progressStatus: pageName
+    };
+
+    await storeSubmission(payload);
+    console.log(`Progress saved: ${pageName}`);
+  } catch (error) {
+    console.error(`Failed to save progress for ${pageName}:`, error);
+    // Don't block user progress if save fails
+  }
+}
+
 updateGenerateButtonState();
 
 // ---------- Landing / Consent flow ----------
@@ -1821,7 +1866,11 @@ document.addEventListener('change', (e) => {
 });
 
 if (instructionsBtn) {
-  instructionsBtn.addEventListener('click', () => {
+  instructionsBtn.addEventListener('click', async () => {
+    // Record timestamp and save progress
+    timestamps.instructionsComplete = new Date().toISOString();
+    await saveProgress('instructions');
+
     if (instructionsPanel) instructionsPanel.hidden = true;
     if (uploadPanel) uploadPanel.hidden = false;
   });
@@ -1911,7 +1960,7 @@ function updateConsentButtonState() {
 
 // Landing page: Start button navigation
 if (startBtn) {
-  startBtn.addEventListener('click', () => {
+  startBtn.addEventListener('click', async () => {
     // Capture source type and ID from landing page
     const selectedSource = getSelectedSource();
     const enteredId = (sourceIdInput?.value || '').trim();
@@ -1929,6 +1978,10 @@ if (startBtn) {
     if (consentParticipantId) {
       consentParticipantId.textContent = sourceId;
     }
+
+    // Record timestamp and save progress
+    timestamps.landingComplete = new Date().toISOString();
+    await saveProgress('landing');
 
     if (landingPanel) landingPanel.hidden = true;
     if (consentPanel) consentPanel.hidden = false;
@@ -1957,11 +2010,16 @@ if (consentDeclineBtn) {
 
 // Consent page: Continue button (navigates to next page)
 if (consentContinueBtn) {
-  consentContinueBtn.addEventListener('click', () => {
+  consentContinueBtn.addEventListener('click', async () => {
     if (!consentGiven || consentDeclined) {
       alert('Please agree to participate before continuing.');
       return;
     }
+
+    // Record timestamp and save progress
+    timestamps.consentComplete = new Date().toISOString();
+    await saveProgress('consent');
+
     if (consentPanel) consentPanel.hidden = true;
     if (instructionsPanel) instructionsPanel.hidden = false;
   });
@@ -1987,7 +2045,7 @@ if (consentContinueBtn) {
 })();
 
 if (approveBtn) {
-  approveBtn.addEventListener('click', () => {
+  approveBtn.addEventListener('click', async () => {
     if (!parsedMessages.length || !meetsActivityCriteria) {
       alert('Please provide an eligible chat first.');
       return;
@@ -1997,6 +2055,11 @@ if (approveBtn) {
       return;
     }
     consentApproved = true;
+
+    // Record timestamp and save progress
+    timestamps.uploadComplete = new Date().toISOString();
+    await saveProgress('upload');
+
     if (uploadPanel) uploadPanel.hidden = true;
     if (groupPanel) groupPanel.hidden = false;
     if (generationPanel) generationPanel.hidden = false;
