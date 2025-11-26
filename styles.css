@@ -445,3 +445,36 @@ input:focus {
     width: 100%;
   }
 }
+
+/* Instruction sections styling */
+.instruction-section {
+  margin: 1.5rem 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.instruction-section summary {
+  padding: 1rem;
+  cursor: pointer;
+  background: var(--bg-secondary);
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.instruction-section summary:hover {
+  background: var(--bg-hover, #f5f5f5);
+}
+
+.instruction-section[open] summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.instruction-content {
+  padding: 1rem;
+}
+
+.instruction-content img {
+  display: block;
+  margin: 1rem auto;
+}
