@@ -57,6 +57,33 @@ const demoWritingConfidence = document.getElementById("demo-writing-confidence")
 const demoExplanationSkill = document.getElementById("demo-explanation-skill");
 const demoAttentionCheck = document.getElementById("demo-attention-check");
 
+// New panels for non-selection questionnaires and final demographics
+const nonSelectionPanel1 = document.getElementById("non-selection-panel-1");
+const nonSelectionPanel2 = document.getElementById("non-selection-panel-2");
+const nonSelectionPanel3 = document.getElementById("non-selection-panel-3");
+const demographicsPanel = document.getElementById("demographics-panel");
+
+// Final demographics fields
+const demoAgeFinal = document.getElementById("demo-age-final");
+const demoGenderFinal = document.getElementById("demo-gender-final");
+const demoLocationFinal = document.getElementById("demo-location-final");
+const demoLanguagesFinal = document.getElementById("demo-languages-final");
+const demoEducationFinal = document.getElementById("demo-education-final");
+const demoWaFrequencyFinal = document.getElementById("demo-wa-frequency-final");
+const demoWaGroupsFinal = document.getElementById("demo-wa-groups-final");
+const demoWaAdminGroupsFinal = document.getElementById("demo-wa-admin-groups-final");
+const demoModerationExpFinal = document.getElementById("demo-moderation-exp-final");
+const demoAdminDurationFinal = document.getElementById("demo-admin-duration-final");
+const demoWritingConfidenceFinal = document.getElementById("demo-writing-confidence-final");
+const demoExplanationSkillFinal = document.getElementById("demo-explanation-skill-final");
+const demoAttentionCheckFinal = document.getElementById("demo-attention-check-final");
+const submitFinalBtn = document.getElementById("submit-final");
+
+// Non-selection questionnaire buttons
+const nonSelectionNext1 = document.getElementById("non-selection-next-1");
+const nonSelectionNext2 = document.getElementById("non-selection-next-2");
+const nonSelectionNext3 = document.getElementById("non-selection-next-3");
+
 let chatFile = null;
 let parsedMessages = [];
 let contextualWindow = [];
@@ -79,6 +106,8 @@ let lastGenerated = null;
 let deviceType = null;
 let transcriptMeta = null;
 let rulesGenerated = false;
+let unselectedRulesForQuestionnaire = []; // 3 unselected rules for non-selection questionnaires
+let nonSelectionResponses = {}; // Store responses for non-selection questionnaires
 
 // Timestamps for tracking progress through pages
 let timestamps = {
@@ -1568,6 +1597,72 @@ generateBtn.addEventListener("click", async () => {
   }
 });
 
+// Function to select 3 unselected rules for non-selection questionnaires
+function selectUnselectedRules() {
+  const unselected = availableRules.slice(); // Get all unselected rules
+
+  if (unselected.length < 3) {
+    // Not enough unselected rules - this shouldn't happen normally
+    return unselected;
+  }
+
+  // Group unselected rules by source
+  const bySource = {
+    generic: [],
+    contextual: [],
+    metadata: []
+  };
+
+  unselected.forEach(rule => {
+    if (Array.isArray(rule.sources)) {
+      // For merged rules, pick the first source for categorization
+      const primarySource = rule.sources[0];
+      if (bySource[primarySource]) {
+        bySource[primarySource].push(rule);
+      }
+    } else if (rule.source && bySource[rule.source]) {
+      bySource[rule.source].push(rule);
+    }
+  });
+
+  const selected = [];
+
+  // Try to pick one from each source
+  ['generic', 'contextual', 'metadata'].forEach(source => {
+    if (bySource[source].length > 0 && selected.length < 3) {
+      const randomIndex = Math.floor(Math.random() * bySource[source].length);
+      selected.push(bySource[source][randomIndex]);
+      // Remove from the source array to avoid duplicates
+      bySource[source].splice(randomIndex, 1);
+    }
+  });
+
+  // If we still need more rules (e.g., some sources had no rules)
+  while (selected.length < 3) {
+    // Collect remaining rules from all sources
+    const remaining = [...bySource.generic, ...bySource.contextual, ...bySource.metadata];
+
+    if (remaining.length === 0) {
+      // No more rules available, break
+      break;
+    }
+
+    const randomIndex = Math.floor(Math.random() * remaining.length);
+    selected.push(remaining[randomIndex]);
+
+    // Remove the selected rule from its source
+    const selectedRule = remaining[randomIndex];
+    ['generic', 'contextual', 'metadata'].forEach(source => {
+      const idx = bySource[source].findIndex(r => r.id === selectedRule.id);
+      if (idx !== -1) {
+        bySource[source].splice(idx, 1);
+      }
+    });
+  }
+
+  return selected;
+}
+
 submitRankingsBtn.addEventListener("click", () => {
   rankingError.textContent = "";
 
@@ -1581,45 +1676,256 @@ submitRankingsBtn.addEventListener("click", () => {
     return;
   }
 
-  const selectedRules = rankedRules.map((rule) => ({ rule }));
-  const totalSelected = selectedRules.length;
+  // Select 3 unselected rules for non-selection questionnaires
+  unselectedRulesForQuestionnaire = selectUnselectedRules();
 
-  const hasSrc = (rule, type) => Array.isArray(rule.sources) ? rule.sources.includes(type) : rule.source === type;
-  const genericSelections = selectedRules
-    .filter((item) => hasSrc(item.rule, "generic"))
-    .map((item) => item.rule.text);
-  const contextualSelections = selectedRules
-    .filter((item) => hasSrc(item.rule, "contextual"))
-    .map((item) => item.rule.text);
-  const metadataSelections = selectedRules
-    .filter((item) => hasSrc(item.rule, "metadata"))
-    .map((item) => item.rule.text);
-
-  const genericCount = genericSelections.length;
-  const contextualCount = contextualSelections.length;
-  const metadataCount = metadataSelections.length;
-  const genericProportion = ((genericCount / totalSelected) * 100).toFixed(1);
-  const contextualProportion = ((contextualCount / totalSelected) * 100).toFixed(1);
-  const metadataProportion = ((metadataCount / totalSelected) * 100).toFixed(1);
-
-  // Don't display results to user - only store in database
-  rankingSummary.hidden = true;
-
-  // After storing results, show simple confirmation message
-  rankingSummary.innerHTML = "";
-  const confirmMsg = document.createElement("p");
-  confirmMsg.innerHTML = "<strong>Thank you!</strong> Your selection has been submitted successfully.";
-  rankingSummary.appendChild(confirmMsg);
-  rankingSummary.hidden = false;
-
-  // Store the submission (non-blocking) - all data including breakdown is saved to DB
-  try {
-    const payload = buildSubmissionPayload({ selectedRules, genericSelections, contextualSelections, metadataSelections });
-    storeSubmission(payload).catch((e) => console.error('Store failed', e));
-  } catch (e) {
-    console.error('Failed to build/store submission', e);
+  if (unselectedRulesForQuestionnaire.length < 3) {
+    rankingError.textContent = "Not enough unselected rules to continue. Please deselect some rules first.";
+    return;
   }
+
+  // Populate the first non-selection panel with the first unselected rule
+  const rule1 = unselectedRulesForQuestionnaire[0];
+  document.getElementById('non-selection-rule-text-1').textContent = rule1.text;
+  document.getElementById('non-selection-rule-reason-1').textContent = rule1.reason || '';
+  if (!rule1.reason) {
+    document.getElementById('non-selection-rule-reason-1').hidden = true;
+  } else {
+    document.getElementById('non-selection-rule-reason-1').hidden = false;
+  }
+
+  // Record timestamp for rankings submitted
+  timestamps.rankingsSubmitted = new Date().toISOString();
+
+  // Navigate to first non-selection panel
+  if (rankingPanel) rankingPanel.hidden = true;
+  if (nonSelectionPanel1) nonSelectionPanel1.hidden = false;
 });
+
+// Helper function to get radio button value
+function getRadioValue(name) {
+  const radio = document.querySelector(`input[name="${name}"]:checked`);
+  return radio ? radio.value : null;
+}
+
+// Helper function to validate all radio buttons are answered
+function validateNonSelectionForm(panelNumber) {
+  const prefix = `ns${panelNumber}`;
+  const questions = ['unclear', 'not-relevant', 'generality', 'conflicts',
+                     'unclear-violation', 'time-consuming', 'unfair', 'resistance', 'liked-others'];
+
+  for (const q of questions) {
+    if (!getRadioValue(`${prefix}-${q}`)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Non-selection panel 1 - Next button
+if (nonSelectionNext1) {
+  nonSelectionNext1.addEventListener('click', () => {
+    if (!validateNonSelectionForm(1)) {
+      alert('Please answer all questions before continuing.');
+      return;
+    }
+
+    // Collect responses
+    nonSelectionResponses.rule1 = {
+      rule: {
+        text: unselectedRulesForQuestionnaire[0].text,
+        reason: unselectedRulesForQuestionnaire[0].reason,
+        sources: unselectedRulesForQuestionnaire[0].sources || [unselectedRulesForQuestionnaire[0].source],
+        id: unselectedRulesForQuestionnaire[0].id
+      },
+      unclear: getRadioValue('ns1-unclear'),
+      notRelevant: getRadioValue('ns1-not-relevant'),
+      generality: getRadioValue('ns1-generality'),
+      conflicts: getRadioValue('ns1-conflicts'),
+      unclearViolation: getRadioValue('ns1-unclear-violation'),
+      timeConsuming: getRadioValue('ns1-time-consuming'),
+      unfair: getRadioValue('ns1-unfair'),
+      resistance: getRadioValue('ns1-resistance'),
+      likedOthers: getRadioValue('ns1-liked-others'),
+      otherReason: document.getElementById('ns1-other-reason')?.value || ''
+    };
+
+    // Populate the second non-selection panel
+    const rule2 = unselectedRulesForQuestionnaire[1];
+    document.getElementById('non-selection-rule-text-2').textContent = rule2.text;
+    document.getElementById('non-selection-rule-reason-2').textContent = rule2.reason || '';
+    if (!rule2.reason) {
+      document.getElementById('non-selection-rule-reason-2').hidden = true;
+    } else {
+      document.getElementById('non-selection-rule-reason-2').hidden = false;
+    }
+
+    // Navigate to second panel
+    if (nonSelectionPanel1) nonSelectionPanel1.hidden = true;
+    if (nonSelectionPanel2) nonSelectionPanel2.hidden = false;
+  });
+}
+
+// Non-selection panel 2 - Next button
+if (nonSelectionNext2) {
+  nonSelectionNext2.addEventListener('click', () => {
+    if (!validateNonSelectionForm(2)) {
+      alert('Please answer all questions before continuing.');
+      return;
+    }
+
+    // Collect responses
+    nonSelectionResponses.rule2 = {
+      rule: {
+        text: unselectedRulesForQuestionnaire[1].text,
+        reason: unselectedRulesForQuestionnaire[1].reason,
+        sources: unselectedRulesForQuestionnaire[1].sources || [unselectedRulesForQuestionnaire[1].source],
+        id: unselectedRulesForQuestionnaire[1].id
+      },
+      unclear: getRadioValue('ns2-unclear'),
+      notRelevant: getRadioValue('ns2-not-relevant'),
+      generality: getRadioValue('ns2-generality'),
+      conflicts: getRadioValue('ns2-conflicts'),
+      unclearViolation: getRadioValue('ns2-unclear-violation'),
+      timeConsuming: getRadioValue('ns2-time-consuming'),
+      unfair: getRadioValue('ns2-unfair'),
+      resistance: getRadioValue('ns2-resistance'),
+      likedOthers: getRadioValue('ns2-liked-others'),
+      otherReason: document.getElementById('ns2-other-reason')?.value || ''
+    };
+
+    // Populate the third non-selection panel
+    const rule3 = unselectedRulesForQuestionnaire[2];
+    document.getElementById('non-selection-rule-text-3').textContent = rule3.text;
+    document.getElementById('non-selection-rule-reason-3').textContent = rule3.reason || '';
+    if (!rule3.reason) {
+      document.getElementById('non-selection-rule-reason-3').hidden = true;
+    } else {
+      document.getElementById('non-selection-rule-reason-3').hidden = false;
+    }
+
+    // Navigate to third panel
+    if (nonSelectionPanel2) nonSelectionPanel2.hidden = true;
+    if (nonSelectionPanel3) nonSelectionPanel3.hidden = false;
+  });
+}
+
+// Non-selection panel 3 - Next button (goes to demographics)
+if (nonSelectionNext3) {
+  nonSelectionNext3.addEventListener('click', () => {
+    if (!validateNonSelectionForm(3)) {
+      alert('Please answer all questions before continuing.');
+      return;
+    }
+
+    // Collect responses
+    nonSelectionResponses.rule3 = {
+      rule: {
+        text: unselectedRulesForQuestionnaire[2].text,
+        reason: unselectedRulesForQuestionnaire[2].reason,
+        sources: unselectedRulesForQuestionnaire[2].sources || [unselectedRulesForQuestionnaire[2].source],
+        id: unselectedRulesForQuestionnaire[2].id
+      },
+      unclear: getRadioValue('ns3-unclear'),
+      notRelevant: getRadioValue('ns3-not-relevant'),
+      generality: getRadioValue('ns3-generality'),
+      conflicts: getRadioValue('ns3-conflicts'),
+      unclearViolation: getRadioValue('ns3-unclear-violation'),
+      timeConsuming: getRadioValue('ns3-time-consuming'),
+      unfair: getRadioValue('ns3-unfair'),
+      resistance: getRadioValue('ns3-resistance'),
+      likedOthers: getRadioValue('ns3-liked-others'),
+      otherReason: document.getElementById('ns3-other-reason')?.value || ''
+    };
+
+    // Navigate to demographics panel
+    if (nonSelectionPanel3) nonSelectionPanel3.hidden = true;
+    if (demographicsPanel) demographicsPanel.hidden = false;
+  });
+}
+
+// Helper function to validate final demographics
+function validateFinalDemographics() {
+  if (!demoAgeFinal || !demoGenderFinal || !demoLocationFinal || !demoLanguagesFinal ||
+      !demoEducationFinal || !demoWaFrequencyFinal || !demoWaGroupsFinal ||
+      !demoWaAdminGroupsFinal || !demoModerationExpFinal || !demoAdminDurationFinal ||
+      !demoWritingConfidenceFinal || !demoExplanationSkillFinal || !demoAttentionCheckFinal) {
+    return false;
+  }
+
+  const age = demoAgeFinal.value.trim();
+  const gender = demoGenderFinal.value;
+  const location = demoLocationFinal.value.trim();
+  const languages = demoLanguagesFinal.value.trim();
+  const education = demoEducationFinal.value;
+  const waFreq = demoWaFrequencyFinal.value;
+  const waGroups = demoWaGroupsFinal.value;
+  const waAdminGroups = demoWaAdminGroupsFinal.value;
+  const modExp = demoModerationExpFinal.value;
+  const adminDur = demoAdminDurationFinal.value;
+  const writingConf = demoWritingConfidenceFinal.value;
+  const explainSkill = demoExplanationSkillFinal.value;
+  const attCheck = demoAttentionCheckFinal.value;
+
+  return age && gender && location && languages && education && waFreq &&
+         waGroups && waAdminGroups && modExp && adminDur &&
+         writingConf && explainSkill && attCheck;
+}
+
+// Final submit button - submits everything
+if (submitFinalBtn) {
+  submitFinalBtn.addEventListener('click', async () => {
+    if (!validateFinalDemographics()) {
+      alert('Please complete all demographic questions before submitting.');
+      return;
+    }
+
+    // Disable button to prevent double submission
+    submitFinalBtn.disabled = true;
+    submitFinalBtn.textContent = 'Submitting...';
+
+    try {
+      // Build selected rules data
+      const selectedRules = rankedRules.map((rule) => ({ rule }));
+      const hasSrc = (rule, type) => Array.isArray(rule.sources) ? rule.sources.includes(type) : rule.source === type;
+      const genericSelections = selectedRules
+        .filter((item) => hasSrc(item.rule, "generic"))
+        .map((item) => item.rule.text);
+      const contextualSelections = selectedRules
+        .filter((item) => hasSrc(item.rule, "contextual"))
+        .map((item) => item.rule.text);
+      const metadataSelections = selectedRules
+        .filter((item) => hasSrc(item.rule, "metadata"))
+        .map((item) => item.rule.text);
+
+      // Build payload with all data
+      const payload = buildSubmissionPayload({
+        selectedRules,
+        genericSelections,
+        contextualSelections,
+        metadataSelections
+      });
+
+      // Submit to server
+      await storeSubmission(payload);
+
+      // Show success message
+      const msgDiv = document.getElementById('final-submission-message');
+      if (msgDiv) {
+        msgDiv.innerHTML = '<p><strong>Thank you!</strong> Your responses have been submitted successfully. You may now close this page.</p>';
+        msgDiv.hidden = false;
+      }
+
+      submitFinalBtn.textContent = 'Submitted';
+
+    } catch (error) {
+      console.error('Submission failed:', error);
+      alert('Failed to submit your responses. Please try again.');
+      submitFinalBtn.disabled = false;
+      submitFinalBtn.textContent = 'Submit';
+    }
+  });
+}
 
 function buildSubmissionPayload({ selectedRules, genericSelections, contextualSelections, metadataSelections }) {
   const sessionId = getOrCreateSessionId();
@@ -1632,7 +1938,7 @@ function buildSubmissionPayload({ selectedRules, genericSelections, contextualSe
   const previewLines = (transcriptPreview?.textContent || '').split('\n');
 
   // Set final timestamp
-  timestamps.rankingsSubmitted = new Date().toISOString();
+  timestamps.finalSubmit = new Date().toISOString();
 
   return {
     sessionId,
@@ -1649,19 +1955,19 @@ function buildSubmissionPayload({ selectedRules, genericSelections, contextualSe
       agreeToParticipate: consentAgree?.checked || false,
     },
     demographics: {
-      age: demoAge?.value || '',
-      gender: demoGender?.value || '',
-      location: demoLocation?.value || '',
-      languages: demoLanguages?.value || '',
-      education: demoEducation?.value || '',
-      whatsappFrequency: demoWaFrequency?.value || '',
-      whatsappGroups: demoWaGroups?.value || '',
-      whatsappAdminGroups: demoWaAdminGroups?.value || '',
-      moderationExperience: demoModerationExp?.value || '',
-      adminDuration: demoAdminDuration?.value || '',
-      writingConfidence: demoWritingConfidence?.value || '',
-      explanationSkill: demoExplanationSkill?.value || '',
-      attentionCheck: demoAttentionCheck?.value || '',
+      age: demoAgeFinal?.value || '',
+      gender: demoGenderFinal?.value || '',
+      location: demoLocationFinal?.value || '',
+      languages: demoLanguagesFinal?.value || '',
+      education: demoEducationFinal?.value || '',
+      whatsappFrequency: demoWaFrequencyFinal?.value || '',
+      whatsappGroups: demoWaGroupsFinal?.value || '',
+      whatsappAdminGroups: demoWaAdminGroupsFinal?.value || '',
+      moderationExperience: demoModerationExpFinal?.value || '',
+      adminDuration: demoAdminDurationFinal?.value || '',
+      writingConfidence: demoWritingConfidenceFinal?.value || '',
+      explanationSkill: demoExplanationSkillFinal?.value || '',
+      attentionCheck: demoAttentionCheckFinal?.value || '',
     },
     transcript: transcriptMeta || {},
     groupType: lastGenerated?.groupType || (groupTypeSelect.value || ''),
@@ -1680,6 +1986,11 @@ function buildSubmissionPayload({ selectedRules, genericSelections, contextualSe
       genericSelections,
       contextualSelections,
       metadataSelections,
+    },
+    nonSelection: {
+      rule1: nonSelectionResponses.rule1 || null,
+      rule2: nonSelectionResponses.rule2 || null,
+      rule3: nonSelectionResponses.rule3 || null,
     },
     createdAt: new Date().toISOString(),
     progressStatus: 'completed'
@@ -1845,20 +2156,11 @@ function validateDemographics() {
 function updateApproveButtonState() {
   if (!approveBtn) return;
   const hasChat = meetsActivityCriteria && parsedMessages.length > 0;
-  const hasDemographics = validateDemographics();
-  approveBtn.disabled = !(hasChat && hasDemographics);
+  // Demographics no longer required on upload page
+  approveBtn.disabled = !hasChat;
 }
 
-// Add event listeners to demographic fields
-[demoAge, demoGender, demoLocation, demoLanguages, demoEducation,
- demoWaFrequency, demoWaGroups, demoWaAdminGroups, demoModerationExp,
- demoAdminDuration, demoWritingConfidence,
- demoExplanationSkill, demoAttentionCheck].forEach(field => {
-  if (field) {
-    field.addEventListener('change', updateApproveButtonState);
-    field.addEventListener('input', updateApproveButtonState);
-  }
-});
+// Demographic fields no longer on upload page - removed event listeners
 
 // Consent form validation and navigation
 function updateConsentButtonState() {
@@ -1960,6 +2262,10 @@ if (consentContinueBtn) {
   if (groupPanel) groupPanel.hidden = true;
   if (generationPanel) generationPanel.hidden = true;
   if (rankingPanel) rankingPanel.hidden = true;
+  if (nonSelectionPanel1) nonSelectionPanel1.hidden = true;
+  if (nonSelectionPanel2) nonSelectionPanel2.hidden = true;
+  if (nonSelectionPanel3) nonSelectionPanel3.hidden = true;
+  if (demographicsPanel) demographicsPanel.hidden = true;
 
   // Ensure source-id-field is hidden initially
   if (sourceIdField) sourceIdField.hidden = true;
@@ -1969,10 +2275,6 @@ if (approveBtn) {
   approveBtn.addEventListener('click', async () => {
     if (!parsedMessages.length || !meetsActivityCriteria) {
       alert('Please provide an eligible chat first.');
-      return;
-    }
-    if (!validateDemographics()) {
-      alert('Please complete all demographic questions before continuing.');
       return;
     }
     consentApproved = true;
