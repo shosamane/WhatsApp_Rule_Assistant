@@ -121,6 +121,26 @@ let timestamps = {
   rankingsSubmitted: null
 };
 
+// Page history tracking for browser back/forward support
+let pageHistory = [];
+let currentPageIndex = -1;
+let isNavigatingHistory = false;
+
+// Page definitions for routing
+const PAGES = {
+  LANDING: 'landing',
+  CONSENT: 'consent',
+  INSTRUCTIONS: 'instructions',
+  UPLOAD: 'upload',
+  GROUP: 'group',
+  GENERATION: 'generation',
+  SELECTION: 'selection',
+  NON_SELECTION_1: 'non-selection-1',
+  NON_SELECTION_2: 'non-selection-2',
+  NON_SELECTION_3: 'non-selection-3',
+  DEMOGRAPHICS: 'demographics'
+};
+
 const MAX_SELECTED_RULES = 5;
 const MAX_CONTEXT_CHARS = 300000;
 const DRAG_RULE_ID = "text/x-rule-id";
@@ -128,6 +148,128 @@ const DRAG_RULE_SOURCE = "text/x-rule-source";
 const ZIP_FILE_REGEX = /\.zip$/i;
 const GEMINI_MODEL = "models/gemini-2.5-pro";
 const GEMINI_FLASH_MODEL = "models/gemini-2.5-flash";
+
+// ========== Browser Navigation Support ==========
+
+// Navigate to a page and update browser history
+function navigateToPage(pageName, addToHistory = true) {
+  if (addToHistory && !isNavigatingHistory) {
+    // Add to page history
+    pageHistory = pageHistory.slice(0, currentPageIndex + 1);
+    pageHistory.push({
+      page: pageName,
+      timestamp: new Date().toISOString()
+    });
+    currentPageIndex = pageHistory.length - 1;
+
+    // Update browser history
+    const url = new URL(window.location);
+    url.searchParams.set('page', pageName);
+    history.pushState({ page: pageName }, '', url);
+  }
+
+  // Show the requested page
+  showPage(pageName);
+}
+
+// Show the specified page (hide all others)
+function showPage(pageName) {
+  // Hide all panels
+  if (landingPanel) landingPanel.hidden = true;
+  if (consentPanel) consentPanel.hidden = true;
+  if (instructionsPanel) instructionsPanel.hidden = true;
+  if (uploadPanel) uploadPanel.hidden = true;
+  if (groupPanel) groupPanel.hidden = true;
+  if (generationPanel) generationPanel.hidden = true;
+  if (rankingPanel) rankingPanel.hidden = true;
+  if (nonSelectionPanel1) nonSelectionPanel1.hidden = true;
+  if (nonSelectionPanel2) nonSelectionPanel2.hidden = true;
+  if (nonSelectionPanel3) nonSelectionPanel3.hidden = true;
+  if (demographicsPanel) demographicsPanel.hidden = true;
+
+  // Show the requested panel
+  switch (pageName) {
+    case PAGES.LANDING:
+      if (landingPanel) landingPanel.hidden = false;
+      break;
+    case PAGES.CONSENT:
+      if (consentPanel) consentPanel.hidden = false;
+      break;
+    case PAGES.INSTRUCTIONS:
+      if (instructionsPanel) instructionsPanel.hidden = false;
+      break;
+    case PAGES.UPLOAD:
+      if (uploadPanel) uploadPanel.hidden = false;
+      break;
+    case PAGES.GROUP:
+      if (groupPanel) groupPanel.hidden = false;
+      if (generationPanel) generationPanel.hidden = false;
+      break;
+    case PAGES.GENERATION:
+      if (groupPanel) groupPanel.hidden = false;
+      if (generationPanel) generationPanel.hidden = false;
+      break;
+    case PAGES.SELECTION:
+      if (rankingPanel) rankingPanel.hidden = false;
+      break;
+    case PAGES.NON_SELECTION_1:
+      if (nonSelectionPanel1) nonSelectionPanel1.hidden = false;
+      break;
+    case PAGES.NON_SELECTION_2:
+      if (nonSelectionPanel2) nonSelectionPanel2.hidden = false;
+      break;
+    case PAGES.NON_SELECTION_3:
+      if (nonSelectionPanel3) nonSelectionPanel3.hidden = false;
+      break;
+    case PAGES.DEMOGRAPHICS:
+      if (demographicsPanel) demographicsPanel.hidden = false;
+      break;
+  }
+}
+
+// Handle browser back/forward buttons
+window.addEventListener('popstate', (event) => {
+  if (event.state && event.state.page) {
+    isNavigatingHistory = true;
+
+    // Find the page in history
+    const targetPage = event.state.page;
+    const historyIndex = pageHistory.findIndex(h => h.page === targetPage);
+
+    if (historyIndex !== -1) {
+      currentPageIndex = historyIndex;
+    }
+
+    // Show the page
+    showPage(targetPage);
+
+    isNavigatingHistory = false;
+  }
+});
+
+// Initialize current page from URL or default to landing
+(function initializePage() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const currentPage = urlParams.get('page') || PAGES.LANDING;
+
+  if (currentPage !== PAGES.LANDING) {
+    // Restore from URL parameter
+    pageHistory = [{ page: currentPage, timestamp: new Date().toISOString() }];
+    currentPageIndex = 0;
+    history.replaceState({ page: currentPage }, '', window.location);
+  } else {
+    // Start with landing page
+    pageHistory = [{ page: PAGES.LANDING, timestamp: new Date().toISOString() }];
+    currentPageIndex = 0;
+    const url = new URL(window.location);
+    url.searchParams.set('page', PAGES.LANDING);
+    history.replaceState({ page: PAGES.LANDING }, '', url);
+  }
+
+  showPage(currentPage);
+})();
+
+// ========== End Browser Navigation Support ==========
 
 function setLoadingState(state) {
   if (!loadingBox) return;
@@ -1580,6 +1722,9 @@ generateBtn.addEventListener("click", async () => {
     // Record timestamp and save progress
     timestamps.rulesGenerated = new Date().toISOString();
     await saveProgress('generation');
+
+    // Navigate to rule selection page
+    navigateToPage(PAGES.SELECTION);
   } catch (error) {
     console.error(error);
     errorBox.textContent = error.message;
@@ -1701,8 +1846,7 @@ submitRankingsBtn.addEventListener("click", async () => {
   await saveProgress('rankingsSubmitted');
 
   // Navigate to first non-selection panel
-  if (rankingPanel) rankingPanel.hidden = true;
-  if (nonSelectionPanel1) nonSelectionPanel1.hidden = false;
+  navigateToPage(PAGES.NON_SELECTION_1);
 });
 
 // Helper function to get radio button value
@@ -1767,8 +1911,7 @@ if (nonSelectionNext1) {
     }
 
     // Navigate to second panel
-    if (nonSelectionPanel1) nonSelectionPanel1.hidden = true;
-    if (nonSelectionPanel2) nonSelectionPanel2.hidden = false;
+    navigateToPage(PAGES.NON_SELECTION_2);
   });
 }
 
@@ -1814,8 +1957,7 @@ if (nonSelectionNext2) {
     }
 
     // Navigate to third panel
-    if (nonSelectionPanel2) nonSelectionPanel2.hidden = true;
-    if (nonSelectionPanel3) nonSelectionPanel3.hidden = false;
+    navigateToPage(PAGES.NON_SELECTION_3);
   });
 }
 
@@ -1851,8 +1993,7 @@ if (nonSelectionNext3) {
     await saveProgress('nonSelection3');
 
     // Navigate to demographics panel
-    if (nonSelectionPanel3) nonSelectionPanel3.hidden = true;
-    if (demographicsPanel) demographicsPanel.hidden = false;
+    navigateToPage(PAGES.DEMOGRAPHICS);
   });
 }
 
@@ -2047,6 +2188,7 @@ async function saveProgress(pageName) {
       sessionId,
       pageName,
       timestamps,
+      pageHistory, // Include full navigation history
       sourceType,
       sourceId,
       consent: consentGiven ? {
@@ -2150,8 +2292,8 @@ if (instructionsBtn) {
     timestamps.instructionsComplete = new Date().toISOString();
     await saveProgress('instructions');
 
-    if (instructionsPanel) instructionsPanel.hidden = true;
-    if (uploadPanel) uploadPanel.hidden = false;
+    // Navigate to upload page
+    navigateToPage(PAGES.UPLOAD);
   });
 }
 
@@ -2253,8 +2395,8 @@ if (startBtn) {
     timestamps.landingComplete = new Date().toISOString();
     await saveProgress('landing');
 
-    if (landingPanel) landingPanel.hidden = true;
-    if (consentPanel) consentPanel.hidden = false;
+    // Navigate to consent page
+    navigateToPage(PAGES.CONSENT);
   });
 }
 
@@ -2290,31 +2432,16 @@ if (consentContinueBtn) {
     timestamps.consentComplete = new Date().toISOString();
     await saveProgress('consent');
 
-    if (consentPanel) consentPanel.hidden = true;
-    if (instructionsPanel) instructionsPanel.hidden = false;
+    // Navigate to instructions page
+    navigateToPage(PAGES.INSTRUCTIONS);
   });
 }
 
 // Initialize page state - ensure only landing panel is visible
-(function initializePageState() {
-  // Hide header initially
+// Hide header and source-id-field initially
+(function() {
   const mainHeader = document.getElementById('main-header');
   if (mainHeader) mainHeader.hidden = true;
-
-  // Show only landing panel
-  if (landingPanel) landingPanel.hidden = false;
-  if (consentPanel) consentPanel.hidden = true;
-  if (instructionsPanel) instructionsPanel.hidden = true;
-  if (uploadPanel) uploadPanel.hidden = true;
-  if (groupPanel) groupPanel.hidden = true;
-  if (generationPanel) generationPanel.hidden = true;
-  if (rankingPanel) rankingPanel.hidden = true;
-  if (nonSelectionPanel1) nonSelectionPanel1.hidden = true;
-  if (nonSelectionPanel2) nonSelectionPanel2.hidden = true;
-  if (nonSelectionPanel3) nonSelectionPanel3.hidden = true;
-  if (demographicsPanel) demographicsPanel.hidden = true;
-
-  // Ensure source-id-field is hidden initially
   if (sourceIdField) sourceIdField.hidden = true;
 })();
 
@@ -2330,9 +2457,8 @@ if (approveBtn) {
     timestamps.uploadComplete = new Date().toISOString();
     await saveProgress('upload');
 
-    if (uploadPanel) uploadPanel.hidden = true;
-    if (groupPanel) groupPanel.hidden = false;
-    if (generationPanel) generationPanel.hidden = false;
+    // Navigate to group selection page
+    navigateToPage(PAGES.GROUP);
     updateGenerateButtonState();
   });
 }
