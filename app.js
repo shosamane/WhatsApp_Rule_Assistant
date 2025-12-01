@@ -307,10 +307,15 @@ function setLoadingState(state) {
   }
 }
 
-rankedList.dataset.emptyMessage = "Drag rules here to select them (max 5).";
-availableList.dataset.emptyMessage = "Generate rules to begin.";
-rankedList.classList.add("empty");
-availableList.classList.add("empty");
+// Initialize drag-and-drop lists (only if they exist - not used with checkbox interface)
+if (rankedList) {
+  rankedList.dataset.emptyMessage = "Drag rules here to select them (max 5).";
+  rankedList.classList.add("empty");
+}
+if (availableList) {
+  availableList.dataset.emptyMessage = "Generate rules to begin.";
+  availableList.classList.add("empty");
+}
 const initialDropZoneMarkup = dropZone.innerHTML;
 
 const GENERIC_PROMPT_TEMPLATE = ({ groupType }) => `You are assisting with the generation of governance guidelined for WhatsApp groups.
@@ -1588,13 +1593,18 @@ dropZone.addEventListener("drop", (event) => {
   assignChatFile(files);
 });
 
-rankedList.addEventListener("dragover", handleDragOver);
-rankedList.addEventListener("dragleave", handleDragLeave);
-rankedList.addEventListener("drop", handleRankedDrop);
+// Add drag-and-drop event listeners (only if elements exist)
+if (rankedList) {
+  rankedList.addEventListener("dragover", handleDragOver);
+  rankedList.addEventListener("dragleave", handleDragLeave);
+  rankedList.addEventListener("drop", handleRankedDrop);
+}
 
-availableList.addEventListener("dragover", handleDragOver);
-availableList.addEventListener("dragleave", handleDragLeave);
-availableList.addEventListener("drop", handleAvailableDrop);
+if (availableList) {
+  availableList.addEventListener("dragover", handleDragOver);
+  availableList.addEventListener("dragleave", handleDragLeave);
+  availableList.addEventListener("drop", handleAvailableDrop);
+}
 
 if (fileInput) {
   fileInput.addEventListener("change", (event) => {
