@@ -2088,6 +2088,7 @@ function buildSubmissionPayload({ selectedRules, genericSelections, contextualSe
     timestamps,
     consent: {
       given: consentGiven,
+      declined: consentDeclined,
       timestamp: consentTimestamp,
     },
     demographics: {
@@ -2173,8 +2174,9 @@ async function saveProgress(pageName) {
       timestamps,
       pageHistory, // Include full navigation history
       sourceId,
-      consent: consentGiven ? {
+      consent: (consentGiven || consentDeclined) ? {
         given: consentGiven,
+        declined: consentDeclined,
         timestamp: consentTimestamp,
       } : null,
       demographics: consentApproved ? {
@@ -2283,10 +2285,10 @@ function updateApproveButtonState() {
 
 // Demographic fields no longer on upload page - removed event listeners
 
-// Landing/Consent page: Continue button (no checkbox validation - just bullet points)
-if (consentContinueBtn) {
-  consentContinueBtn.addEventListener('click', async () => {
-    // Assume consent is given by clicking Continue
+// Landing/Consent page: Agree button (navigates to upload page)
+if (consentAgreeBtn) {
+  consentAgreeBtn.addEventListener('click', async () => {
+    // Record consent as given
     consentGiven = true;
     consentDeclined = false;
     consentTimestamp = new Date().toISOString();
@@ -2298,6 +2300,19 @@ if (consentContinueBtn) {
 
     // Navigate to upload page
     navigateToPage(PAGES.UPLOAD);
+  });
+}
+
+// Landing/Consent page: Decline button (prevents further progress)
+if (consentDeclineBtn) {
+  consentDeclineBtn.addEventListener('click', () => {
+    // Record consent as declined
+    consentGiven = false;
+    consentDeclined = true;
+    consentTimestamp = new Date().toISOString();
+
+    // Alert user and prevent progress
+    alert('You must agree to participate to continue with this study. Thank you for your interest.');
   });
 }
 

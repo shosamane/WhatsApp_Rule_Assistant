@@ -70,24 +70,48 @@
         <li>I understand my data will be anonymized and kept confidential</li>
       </ul>
 
-      <button id="consent-continue-btn" class="primary" style="margin-top: 1.5rem;">Continue</button>
+      <div class="consent-buttons">
+        <button id="consent-agree-btn" class="primary">I AGREE TO PARTICIPATE</button>
+        <button id="consent-decline-btn" class="primary outline" style="background: transparent; color: var(--error); border-color: var(--error);">I DO NOT WISH TO PARTICIPATE</button>
+      </div>
     </section>
 
     <section class="panel" id="upload-panel" hidden>
       <!-- Prolific/Clickworker ID Input -->
+      <p>Share your Prolific/ Clickworker ID. We only use this information to process your reimbursement.</p>
+      <input id="source-id" type="text" placeholder="" style="width: 100%; padding: 0.65rem 0.75rem; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: inherit; font: inherit; margin-bottom: 1.5rem;" />
+
+      <p style="margin-bottom: 1rem;">Upload WhatsApp group chat from one of your groups. Please select a group with:</p>
+
+      <ul style="margin-bottom: 1rem;">
+        <li>At least 3 members</li>
+        <li>500 messages total, spanning at least 90 days, and at least 50 messages in the last 30 days</li>
+      </ul>
+
+      <p style="margin-bottom: 1.5rem;">We anonymize the chat on your device by removing names, phone numbers, addresses, photos etc. before creating group rules based on group conversations. We will delete the chat after creating group rules.</p>
+
+      <div id="drop-zone" class="drop-zone" tabindex="0" aria-label="Drop WhatsApp zip or chat .txt here">
+        <p class="dz-instructions"><strong>Drop a zip or chat .txt</strong> or use the pickers below.</p>
+        <p class="dz-hint">Pick a .zip or the chat .txt (usually <code>_chat.txt</code>). Media files are ignored.</p>
+      </div>
+      <div class="picker-row">
+        <label class="picker-label" for="chat-zip">Choose zip:</label>
+        <input id="chat-zip" type="file" accept=".zip" />
+      </div>
+      <div class="picker-row">
+        <label class="picker-label" for="chat-txt">Or choose chat .txt:</label>
+        <input id="chat-txt" type="file" accept=".txt" />
+      </div>
+      <p class="tip">If Google Drive fails on Android, download the file to your device and pick it from Files.</p>
+      <div class="file-status" id="file-status" role="status" aria-live="polite"></div>
       <div class="field">
-        <span>Enter your Prolific or Clickworker ID</span>
-        <input id="source-id" type="text" placeholder="Enter your Prolific/Clickworker ID" />
+        <span>Below is a snapshot of the anonymized transcript. We do all of the anonymization (removing user names, email IDs, phone numbers and other personal information) on your device. You can send us this anonymized transcript by clicking the button below.</span>
+        <div id="transcript-preview" class="transcript-preview" aria-label="Transcript preview" tabindex="0"></div>
       </div>
 
-      <h3 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Upload Your WhatsApp Chat</h3>
-      <p style="color: var(--muted); margin-bottom: 1rem;">
-        <strong>Eligibility Criteria:</strong> Your chat must have at least <strong>3 members</strong>,
-        <strong>500 messages total</strong>, span at least <strong>90 days</strong>, and include
-        <strong>50 messages in the last 30 days</strong>.
-      </p>
+      <button id="approve-btn" class="primary" disabled>Approve and Continue</button>
 
-      <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">How to Export Your WhatsApp Chat</h4>
+      <p style="margin-top: 2rem; margin-bottom: 1rem;">If you need guidance regarding how to export WhatsApp group chat, please follow step-by-step instructions below based on your device where you have access to WhatsApp:</p>
 
       <details class="instruction-section">
         <summary><strong>Desktop (Windows/Mac)</strong></summary>
@@ -120,27 +144,6 @@
           <p style="color: var(--muted); font-style: italic;">Instructions coming soon.</p>
         </div>
       </details>
-
-      <div id="drop-zone" class="drop-zone" tabindex="0" aria-label="Drop WhatsApp zip or chat .txt here">
-        <p class="dz-instructions"><strong>Drop a zip or chat .txt</strong> or use the pickers below.</p>
-        <p class="dz-hint">Pick a .zip or the chat .txt (usually <code>_chat.txt</code>). Media files are ignored.</p>
-      </div>
-      <div class="picker-row">
-        <label class="picker-label" for="chat-zip">Choose zip:</label>
-        <input id="chat-zip" type="file" accept=".zip" />
-      </div>
-      <div class="picker-row">
-        <label class="picker-label" for="chat-txt">Or choose chat .txt:</label>
-        <input id="chat-txt" type="file" accept=".txt" />
-      </div>
-      <p class="tip">If Google Drive fails on Android, download the file to your device and pick it from Files.</p>
-      <div class="file-status" id="file-status" role="status" aria-live="polite"></div>
-      <div class="field">
-        <span>Below is a snapshot of the anonymized transcript. We do all of the anonymization (removing user names, email IDs, phone numbers and other personal information) on your device. You can send us this anonymized transcript by clicking the button below.</span>
-        <div id="transcript-preview" class="transcript-preview" aria-label="Transcript preview" tabindex="0"></div>
-      </div>
-
-      <button id="approve-btn" class="primary" disabled>Approve and Continue</button>
     </section>
 
     <section class="panel" id="group-panel" hidden>
