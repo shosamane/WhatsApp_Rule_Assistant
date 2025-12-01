@@ -1952,9 +1952,9 @@ if (explanationsContinue) {
 
 // Helper function to validate final demographics
 function validateFinalDemographics() {
-  if (!demoAgeFinal || !demoGenderFinal || !demoLocationFinal || !demoLanguagesFinal ||
-      !demoEducationFinal || !demoWaFrequencyFinal || !demoWaGroupsFinal ||
-      !demoWaAdminGroupsFinal || !demoModerationExpFinal || !demoAdminDurationFinal ||
+  if (!demoAgeFinal || !demoGenderFinal || !demoLocationFinal ||
+      !demoEducationFinal || !demoWaFrequencyFinal ||
+      !demoWaAdminGroupsFinal || !demoAdminDurationFinal ||
       !demoWritingConfidenceFinal || !demoExplanationSkillFinal || !demoAttentionCheckFinal) {
     return false;
   }
@@ -1962,19 +1962,16 @@ function validateFinalDemographics() {
   const age = demoAgeFinal.value.trim();
   const gender = demoGenderFinal.value;
   const location = demoLocationFinal.value.trim();
-  const languages = demoLanguagesFinal.value.trim();
   const education = demoEducationFinal.value;
   const waFreq = demoWaFrequencyFinal.value;
-  const waGroups = demoWaGroupsFinal.value;
   const waAdminGroups = demoWaAdminGroupsFinal.value;
-  const modExp = demoModerationExpFinal.value;
   const adminDur = demoAdminDurationFinal.value;
   const writingConf = demoWritingConfidenceFinal.value;
   const explainSkill = demoExplanationSkillFinal.value;
   const attCheck = demoAttentionCheckFinal.value;
 
-  return age && gender && location && languages && education && waFreq &&
-         waGroups && waAdminGroups && modExp && adminDur &&
+  return age && gender && location && education && waFreq &&
+         waAdminGroups && adminDur &&
          writingConf && explainSkill && attCheck;
 }
 
@@ -2059,12 +2056,9 @@ function buildSubmissionPayload({ selectedRules, genericSelections, contextualSe
       age: demoAgeFinal?.value || '',
       gender: demoGenderFinal?.value || '',
       location: demoLocationFinal?.value || '',
-      languages: demoLanguagesFinal?.value || '',
       education: demoEducationFinal?.value || '',
       whatsappFrequency: demoWaFrequencyFinal?.value || '',
-      whatsappGroups: demoWaGroupsFinal?.value || '',
       whatsappAdminGroups: demoWaAdminGroupsFinal?.value || '',
-      moderationExperience: demoModerationExpFinal?.value || '',
       adminDuration: demoAdminDurationFinal?.value || '',
       writingConfidence: demoWritingConfidenceFinal?.value || '',
       explanationSkill: demoExplanationSkillFinal?.value || '',
@@ -2147,12 +2141,9 @@ async function saveProgress(pageName) {
         age: demoAge?.value || '',
         gender: demoGender?.value || '',
         location: demoLocation?.value || '',
-        languages: demoLanguages?.value || '',
         education: demoEducation?.value || '',
         whatsappFrequency: demoWaFrequency?.value || '',
-        whatsappGroups: demoWaGroups?.value || '',
         whatsappAdminGroups: demoWaAdminGroups?.value || '',
-        moderationExperience: demoModerationExp?.value || '',
         adminDuration: demoAdminDuration?.value || '',
         writingConfidence: demoWritingConfidence?.value || '',
         explanationSkill: demoExplanationSkill?.value || '',
