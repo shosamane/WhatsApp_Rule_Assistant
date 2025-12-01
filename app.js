@@ -100,7 +100,6 @@ let consentDeclined = false;
 let consentTimestamp = null;
 let consentApproved = false;
 let pseudoMap = new Map();
-let sourceType = null;
 let sourceId = null;
 let lastGenerated = null;
 let deviceType = null;
@@ -129,8 +128,6 @@ let isNavigatingHistory = false;
 // Page definitions for routing
 const PAGES = {
   LANDING: 'landing',
-  CONSENT: 'consent',
-  INSTRUCTIONS: 'instructions',
   UPLOAD: 'upload',
   GROUP: 'group',
   GENERATION: 'generation',
@@ -176,8 +173,6 @@ function navigateToPage(pageName, addToHistory = true) {
 function showPage(pageName) {
   // Hide all panels
   if (landingPanel) landingPanel.hidden = true;
-  if (consentPanel) consentPanel.hidden = true;
-  if (instructionsPanel) instructionsPanel.hidden = true;
   if (uploadPanel) uploadPanel.hidden = true;
   if (groupPanel) groupPanel.hidden = true;
   if (generationPanel) generationPanel.hidden = true;
@@ -191,12 +186,6 @@ function showPage(pageName) {
   switch (pageName) {
     case PAGES.LANDING:
       if (landingPanel) landingPanel.hidden = false;
-      break;
-    case PAGES.CONSENT:
-      if (consentPanel) consentPanel.hidden = false;
-      break;
-    case PAGES.INSTRUCTIONS:
-      if (instructionsPanel) instructionsPanel.hidden = false;
       break;
     case PAGES.UPLOAD:
       if (uploadPanel) uploadPanel.hidden = false;
@@ -2095,7 +2084,6 @@ function buildSubmissionPayload({ selectedRules, genericSelections, contextualSe
 
   return {
     sessionId,
-    sourceType,
     sourceId,
     timestamps,
     consent: {
@@ -2105,7 +2093,6 @@ function buildSubmissionPayload({ selectedRules, genericSelections, contextualSe
       ageConfirmed: consentAge?.checked || false,
       voluntaryUnderstood: consentVoluntary?.checked || false,
       confidentialityUnderstood: consentConfidential?.checked || false,
-      agreeToParticipate: consentAgree?.checked || false,
     },
     demographics: {
       age: demoAgeFinal?.value || '',
@@ -2189,7 +2176,6 @@ async function saveProgress(pageName) {
       pageName,
       timestamps,
       pageHistory, // Include full navigation history
-      sourceType,
       sourceId,
       consent: consentGiven ? {
         given: consentGiven,
@@ -2198,7 +2184,6 @@ async function saveProgress(pageName) {
         ageConfirmed: consentAge?.checked || false,
         voluntaryUnderstood: consentVoluntary?.checked || false,
         confidentialityUnderstood: consentConfidential?.checked || false,
-        agreeToParticipate: consentAgree?.checked || false,
       } : null,
       demographics: consentApproved ? {
         age: demoAge?.value || '',
@@ -2266,52 +2251,7 @@ async function saveProgress(pageName) {
 updateGenerateButtonState();
 
 // ---------- Landing / Consent flow ----------
-function getSelectedSource() {
-  const radios = document.querySelectorAll('input[name="source"]');
-  for (const r of radios) { if (r.checked) return r.value; }
-  return null;
-}
-
-document.addEventListener('change', (e) => {
-  if (e.target && e.target.name === 'source') {
-    const v = getSelectedSource();
-    if (!sourceIdField) return;
-    if (v) {
-      sourceIdField.hidden = false;
-      if (sourceIdLabel) {
-        sourceIdLabel.textContent = v === 'research' ? 'Enter your code' : (v === 'prolific' ? 'Enter your Prolific ID' : 'Enter your Clickworker ID');
-      }
-    }
-    updateStartButtonState();
-  }
-});
-
-if (instructionsBtn) {
-  instructionsBtn.addEventListener('click', async () => {
-    // Record timestamp and save progress
-    timestamps.instructionsComplete = new Date().toISOString();
-    await saveProgress('instructions');
-
-    // Navigate to upload page
-    navigateToPage(PAGES.UPLOAD);
-  });
-}
-
-if (sourceIdInput) {
-  sourceIdInput.addEventListener('input', () => {
-    updateStartButtonState();
-  });
-}
-
-function updateStartButtonState() {
-  if (!startBtn) return;
-  const v = getSelectedSource();
-  const idVal = (sourceIdInput?.value || '').trim();
-  startBtn.disabled = !(v && idVal);
-}
-
-// Initialize disabled state on load
-updateStartButtonState();
+// Source selection removed - participants now enter ID directly on upload page
 
 // Validate demographic fields
 function validateDemographics() {
@@ -2353,104 +2293,67 @@ function updateApproveButtonState() {
 
 // Consent form validation and navigation
 function updateConsentButtonState() {
-  if (!consentAgreeBtn || !consentContinueBtn) return;
+  if (!consentAgreeBtn) return;
   const allChecked = consentRead?.checked && consentAge?.checked &&
-                     consentVoluntary?.checked && consentConfidential?.checked &&
-                     consentAgree?.checked;
+                     consentVoluntary?.checked && consentConfidential?.checked;
   consentAgreeBtn.disabled = !allChecked;
-
-  // Continue button is only enabled if consent is given and not declined
-  consentContinueBtn.disabled = !(consentGiven && !consentDeclined);
 }
 
 // Add event listeners to consent checkboxes
-[consentRead, consentAge, consentVoluntary, consentConfidential, consentAgree].forEach(checkbox => {
+[consentRead, consentAge, consentVoluntary, consentConfidential].forEach(checkbox => {
   if (checkbox) {
     checkbox.addEventListener('change', updateConsentButtonState);
   }
 });
 
-// Landing page: Start button navigation
-if (startBtn) {
-  startBtn.addEventListener('click', async () => {
-    // Capture source type and ID from landing page
-    const selectedSource = getSelectedSource();
-    const enteredId = (sourceIdInput?.value || '').trim();
-
-    if (!selectedSource || !enteredId) {
-      alert('Please select an option and enter your code/ID.');
-      return;
-    }
-
-    // Set global variables
-    sourceType = selectedSource;
-    sourceId = enteredId;
-
-    // Populate participant ID in consent form
-    if (consentParticipantId) {
-      consentParticipantId.textContent = sourceId;
-    }
-
-    // Record timestamp and save progress
-    timestamps.landingComplete = new Date().toISOString();
-    await saveProgress('landing');
-
-    // Navigate to consent page
-    navigateToPage(PAGES.CONSENT);
-  });
-}
-
-// Consent page: Agree button (just sets the consent state, doesn't navigate)
+// Landing/Consent page: Agree button (sets consent state and navigates to upload)
 if (consentAgreeBtn) {
-  consentAgreeBtn.addEventListener('click', () => {
+  consentAgreeBtn.addEventListener('click', async () => {
     consentGiven = true;
     consentDeclined = false;
     consentTimestamp = new Date().toISOString();
-    updateConsentButtonState();
+
+    // Record timestamp and save progress
+    timestamps.landingComplete = new Date().toISOString();
+    timestamps.consentComplete = new Date().toISOString();
+    await saveProgress('landing-consent');
+
+    // Navigate to upload page
+    navigateToPage(PAGES.UPLOAD);
   });
 }
 
-// Consent page: Decline button (disables continue)
+// Landing/Consent page: Decline button
 if (consentDeclineBtn) {
   consentDeclineBtn.addEventListener('click', () => {
     consentGiven = false;
     consentDeclined = true;
-    updateConsentButtonState();
     alert('You must agree to participate to continue with this study. Thank you for your interest.');
   });
 }
 
-// Consent page: Continue button (navigates to next page)
-if (consentContinueBtn) {
-  consentContinueBtn.addEventListener('click', async () => {
-    if (!consentGiven || consentDeclined) {
-      alert('Please agree to participate before continuing.');
-      return;
-    }
-
-    // Record timestamp and save progress
-    timestamps.consentComplete = new Date().toISOString();
-    await saveProgress('consent');
-
-    // Navigate to instructions page
-    navigateToPage(PAGES.INSTRUCTIONS);
-  });
-}
-
 // Initialize page state - ensure only landing panel is visible
-// Hide header and source-id-field initially
 (function() {
   const mainHeader = document.getElementById('main-header');
   if (mainHeader) mainHeader.hidden = true;
-  if (sourceIdField) sourceIdField.hidden = true;
 })();
 
 if (approveBtn) {
   approveBtn.addEventListener('click', async () => {
+    // Capture sourceId from upload page
+    const enteredId = (sourceIdInput?.value || '').trim();
+    if (!enteredId) {
+      alert('Please enter your Prolific/Clickworker ID.');
+      return;
+    }
+
     if (!parsedMessages.length || !meetsActivityCriteria) {
       alert('Please provide an eligible chat first.');
       return;
     }
+
+    // Set global sourceId
+    sourceId = enteredId;
     consentApproved = true;
 
     // Record timestamp and save progress

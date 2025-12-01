@@ -478,3 +478,31 @@ input:focus {
   display: block;
   margin: 1rem auto;
 }
+
+/* University logos header */
+.logo-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 3rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem 0;
+  border-bottom: 2px solid var(--border);
+}
+
+.university-logo {
+  height: 60px;
+  width: auto;
+  object-fit: contain;
+}
+
+@media (max-width: 600px) {
+  .logo-header {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .university-logo {
+    height: 50px;
+  }
+}

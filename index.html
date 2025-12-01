@@ -14,22 +14,11 @@
     </header>
 
     <section class="panel" id="landing-panel">
-      <div class="field">
-        <span>How did you get here?</span>
-        <div class="options">
-          <label><input type="radio" name="source" value="research" /> The researchers gave me a code</label>
-          <label><input type="radio" name="source" value="prolific" /> I'm here from Prolific</label>
-          <label><input type="radio" name="source" value="clickworker" /> I'm here from Clickworker</label>
-        </div>
+      <!-- University Logos -->
+      <div class="logo-header">
+        <img src="logos/cornell_logo_simple_b31b1b.png" alt="Cornell University" class="university-logo" />
+        <img src="logos/RNB_H_RED_WHITE_RGB.png" alt="Rutgers University" class="university-logo" />
       </div>
-      <div class="field" id="source-id-field" hidden>
-        <span id="source-id-label">Enter your code</span>
-        <input id="source-id" type="text" placeholder="Enter your code/ID" />
-      </div>
-      <button id="start-btn" class="primary" disabled>Continue</button>
-    </section>
-
-    <section class="panel" id="consent-panel" hidden>
       <h2>CONSENT TO PARTICIPATE IN RESEARCH</h2>
       <h3 style="margin-top: 0.5rem;">Helping Admins Write Grounded Rules for WhatsApp Groups</h3>
 
@@ -71,33 +60,35 @@
       <p>Learn more about IRB practices and privacy: IRBOffice@research.rutgers.edu or irbhp@cornell.edu</p>
 
       <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">CONSENT</h4>
-      <p><strong>I, <span id="consent-participant-id" style="text-decoration: underline;">__________</span>, confirm that:</strong></p>
 
       <div class="options">
         <label><input type="checkbox" id="consent-read" /> I have read this form and understand the study</label>
         <label><input type="checkbox" id="consent-age" /> I am 18 years or older</label>
         <label><input type="checkbox" id="consent-voluntary" /> I understand participation is voluntary and I can withdraw anytime</label>
         <label><input type="checkbox" id="consent-confidential" /> I understand my data will be anonymized and kept confidential</label>
-        <label><input type="checkbox" id="consent-agree" /> I voluntarily agree to participate</label>
       </div>
 
       <div class="consent-buttons">
         <button id="consent-agree-btn" class="primary" disabled>I AGREE TO PARTICIPATE</button>
         <button id="consent-decline-btn" class="primary outline" style="background: transparent; color: var(--error); border-color: var(--error);">I DO NOT WISH TO PARTICIPATE</button>
       </div>
-
-      <p style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--muted);">
-        <strong>Save or print this form for your records:</strong><br>
-        • On desktop: Press <strong>Ctrl+P</strong> (Windows) or <strong>Cmd+P</strong> (Mac) and select "Save as PDF"<br>
-        • On mobile: Tap the menu (⋮) and select "Print" or "Save as PDF"
-      </p>
-
-      <button id="consent-continue-btn" class="primary" style="margin-top: 1.5rem; display: block;" disabled>Continue</button>
     </section>
 
-    <section class="panel" id="instructions-panel" hidden>
-      <h2>How to Export Your WhatsApp Chat</h2>
-      <p>Follow the instructions below based on your device type. Your chat is processed on your device. Only pseudonymous sender labels (User 01, User 02, …) are included in any analysis.</p>
+    <section class="panel" id="upload-panel" hidden>
+      <!-- Prolific/Clickworker ID Input -->
+      <div class="field">
+        <span>Enter your Prolific or Clickworker ID</span>
+        <input id="source-id" type="text" placeholder="Enter your Prolific/Clickworker ID" />
+      </div>
+
+      <h3 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Upload Your WhatsApp Chat</h3>
+      <p style="color: var(--muted); margin-bottom: 1rem;">
+        <strong>Eligibility Criteria:</strong> Your chat must have at least <strong>3 members</strong>,
+        <strong>500 messages total</strong>, span at least <strong>90 days</strong>, and include
+        <strong>50 messages in the last 30 days</strong>.
+      </p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">How to Export Your WhatsApp Chat</h4>
 
       <details class="instruction-section">
         <summary><strong>Desktop (Windows/Mac)</strong></summary>
@@ -131,10 +122,6 @@
         </div>
       </details>
 
-      <button id="instructions-btn" class="primary" style="margin-top: 2rem;">Next</button>
-    </section>
-
-    <section class="panel" id="upload-panel" hidden>
       <div id="drop-zone" class="drop-zone" tabindex="0" aria-label="Drop WhatsApp zip or chat .txt here">
         <p class="dz-instructions"><strong>Drop a zip or chat .txt</strong> or use the pickers below.</p>
         <p class="dz-hint">Pick a .zip or the chat .txt (usually <code>_chat.txt</code>). Media files are ignored.</p>
