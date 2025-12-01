@@ -2118,10 +2118,21 @@ function buildSubmissionPayload({ selectedRules, genericSelections, contextualSe
       contextualSelections,
       metadataSelections,
     },
-    nonSelection: {
-      rule1: nonSelectionResponses.rule1 || null,
-      rule2: nonSelectionResponses.rule2 || null,
-      rule3: nonSelectionResponses.rule3 || null,
+    explanations: {
+      selectedRule: selectedRuleForExplanation ? {
+        text: selectedRuleForExplanation.text,
+        reason: selectedRuleForExplanation.reason,
+        sources: selectedRuleForExplanation.sources || [selectedRuleForExplanation.source],
+        id: selectedRuleForExplanation.id,
+        explanation: selectedExplanation?.value || ''
+      } : null,
+      nonSelectedRule: nonSelectedRuleForExplanation ? {
+        text: nonSelectedRuleForExplanation.text,
+        reason: nonSelectedRuleForExplanation.reason,
+        sources: nonSelectedRuleForExplanation.sources || [nonSelectedRuleForExplanation.source],
+        id: nonSelectedRuleForExplanation.id,
+        explanation: nonSelectedExplanation?.value || ''
+      } : null
     },
     createdAt: new Date().toISOString(),
     progressStatus: 'completed'
