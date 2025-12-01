@@ -1893,12 +1893,6 @@ submitRankingsBtn.addEventListener("click", async () => {
   navigateToPage(PAGES.EXPLANATIONS);
 });
 
-// Helper function to count words in a string
-function countWords(text) {
-  if (!text || typeof text !== 'string') return 0;
-  return text.trim().split(/\s+/).filter(word => word.length > 0).length;
-}
-
 // Helper function to update word count display
 function updateWordCount(textarea, wordCountElement) {
   if (!textarea || !wordCountElement) return;
