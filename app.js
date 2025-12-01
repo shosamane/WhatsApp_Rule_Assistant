@@ -995,16 +995,25 @@ function clearRulesUI() {
   allRules = [];
   availableRules = [];
   rankedRules = [];
-  rankedList.innerHTML = "";
-  availableList.innerHTML = "";
-  rankedList.classList.add("empty");
-  availableList.classList.add("empty");
-  rankedList.dataset.emptyMessage = "Drag rules here to select them (max 5).";
-  availableList.dataset.emptyMessage = "Generate rules to begin.";
-  rankingPanel.hidden = true;
-  rankingSummary.hidden = true;
-  rankingSummary.innerHTML = "";
-  rankingError.textContent = "";
+
+  // Clear drag-and-drop lists (only if they exist)
+  if (rankedList) {
+    rankedList.innerHTML = "";
+    rankedList.classList.add("empty");
+    rankedList.dataset.emptyMessage = "Drag rules here to select them (max 5).";
+  }
+  if (availableList) {
+    availableList.innerHTML = "";
+    availableList.classList.add("empty");
+    availableList.dataset.emptyMessage = "Generate rules to begin.";
+  }
+
+  if (rankingPanel) rankingPanel.hidden = true;
+  if (rankingSummary) {
+    rankingSummary.hidden = true;
+    rankingSummary.innerHTML = "";
+  }
+  if (rankingError) rankingError.textContent = "";
   if (rankingNote) {
     rankingNote.hidden = true;
     rankingNote.textContent = "";
@@ -1353,26 +1362,34 @@ function renderRuleLists() {
     }
   }
 
-  rankedList.innerHTML = "";
-  availableList.innerHTML = "";
+  // Clear drag-and-drop lists (only if they exist - not used with checkbox interface)
+  if (rankedList) {
+    rankedList.innerHTML = "";
+    rankedList.dataset.emptyMessage = rankedRules.length
+      ? ""
+      : "Drag rules here to select them (max 5).";
+    rankedList.classList.toggle("empty", rankedRules.length === 0);
+  }
 
-  rankedList.dataset.emptyMessage = rankedRules.length
-    ? ""
-    : "Drag rules here to select them (max 5).";
-  availableList.dataset.emptyMessage = availableRules.length
-    ? ""
-    : "All rules have been selected.";
+  if (availableList) {
+    availableList.innerHTML = "";
+    availableList.dataset.emptyMessage = availableRules.length
+      ? ""
+      : "All rules have been selected.";
+    availableList.classList.toggle("empty", availableRules.length === 0);
+  }
 
-  rankedList.classList.toggle("empty", rankedRules.length === 0);
-  availableList.classList.toggle("empty", availableRules.length === 0);
+  if (rankedList) {
+    rankedRules.forEach((rule) => {
+      rankedList.appendChild(createRuleCard(rule, { isRanked: true }));
+    });
+  }
 
-  rankedRules.forEach((rule) => {
-    rankedList.appendChild(createRuleCard(rule, { isRanked: true }));
-  });
-
-  availableRules.forEach((rule) => {
-    availableList.appendChild(createRuleCard(rule, { isRanked: false }));
-  });
+  if (availableList) {
+    availableRules.forEach((rule) => {
+      availableList.appendChild(createRuleCard(rule, { isRanked: false }));
+    });
+  }
 }
 
 function createRuleCard(rule, options) {
@@ -1728,7 +1745,9 @@ generateBtn.addEventListener("click", async () => {
   setLoadingState("loading");
   generateBtn.disabled = true;
   clearRulesUI();
-  availableList.dataset.emptyMessage = "Loading new rules...";
+  if (availableList) {
+    availableList.dataset.emptyMessage = "Loading new rules...";
+  }
 
   const stats = JSON.parse(dropZone.dataset.stats || "{}");
 
@@ -1804,10 +1823,14 @@ generateBtn.addEventListener("click", async () => {
   } catch (error) {
     console.error(error);
     errorBox.textContent = error.message;
-    availableList.dataset.emptyMessage = "Generation failed. Please try again.";
-    availableList.classList.add("empty");
-    rankedList.dataset.emptyMessage = "Drag rules here to rank them (max 7).";
-    rankedList.classList.add("empty");
+    if (availableList) {
+      availableList.dataset.emptyMessage = "Generation failed. Please try again.";
+      availableList.classList.add("empty");
+    }
+    if (rankedList) {
+      rankedList.dataset.emptyMessage = "Drag rules here to rank them (max 7).";
+      rankedList.classList.add("empty");
+    }
     if (rankingNote) {
       rankingNote.hidden = true;
       rankingNote.textContent = "";
