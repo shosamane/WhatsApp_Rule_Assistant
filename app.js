@@ -2089,10 +2089,6 @@ function buildSubmissionPayload({ selectedRules, genericSelections, contextualSe
     consent: {
       given: consentGiven,
       timestamp: consentTimestamp,
-      readForm: consentRead?.checked || false,
-      ageConfirmed: consentAge?.checked || false,
-      voluntaryUnderstood: consentVoluntary?.checked || false,
-      confidentialityUnderstood: consentConfidential?.checked || false,
     },
     demographics: {
       age: demoAgeFinal?.value || '',
@@ -2180,10 +2176,6 @@ async function saveProgress(pageName) {
       consent: consentGiven ? {
         given: consentGiven,
         timestamp: consentTimestamp,
-        readForm: consentRead?.checked || false,
-        ageConfirmed: consentAge?.checked || false,
-        voluntaryUnderstood: consentVoluntary?.checked || false,
-        confidentialityUnderstood: consentConfidential?.checked || false,
       } : null,
       demographics: consentApproved ? {
         age: demoAge?.value || '',
@@ -2291,24 +2283,10 @@ function updateApproveButtonState() {
 
 // Demographic fields no longer on upload page - removed event listeners
 
-// Consent form validation and navigation
-function updateConsentButtonState() {
-  if (!consentAgreeBtn) return;
-  const allChecked = consentRead?.checked && consentAge?.checked &&
-                     consentVoluntary?.checked && consentConfidential?.checked;
-  consentAgreeBtn.disabled = !allChecked;
-}
-
-// Add event listeners to consent checkboxes
-[consentRead, consentAge, consentVoluntary, consentConfidential].forEach(checkbox => {
-  if (checkbox) {
-    checkbox.addEventListener('change', updateConsentButtonState);
-  }
-});
-
-// Landing/Consent page: Agree button (sets consent state and navigates to upload)
-if (consentAgreeBtn) {
-  consentAgreeBtn.addEventListener('click', async () => {
+// Landing/Consent page: Continue button (no checkbox validation - just bullet points)
+if (consentContinueBtn) {
+  consentContinueBtn.addEventListener('click', async () => {
+    // Assume consent is given by clicking Continue
     consentGiven = true;
     consentDeclined = false;
     consentTimestamp = new Date().toISOString();
@@ -2320,15 +2298,6 @@ if (consentAgreeBtn) {
 
     // Navigate to upload page
     navigateToPage(PAGES.UPLOAD);
-  });
-}
-
-// Landing/Consent page: Decline button
-if (consentDeclineBtn) {
-  consentDeclineBtn.addEventListener('click', () => {
-    consentGiven = false;
-    consentDeclined = true;
-    alert('You must agree to participate to continue with this study. Thank you for your interest.');
   });
 }
 
