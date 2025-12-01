@@ -57,11 +57,20 @@ const demoWritingConfidence = document.getElementById("demo-writing-confidence")
 const demoExplanationSkill = document.getElementById("demo-explanation-skill");
 const demoAttentionCheck = document.getElementById("demo-attention-check");
 
-// New panels for non-selection questionnaires and final demographics
-const nonSelectionPanel1 = document.getElementById("non-selection-panel-1");
-const nonSelectionPanel2 = document.getElementById("non-selection-panel-2");
-const nonSelectionPanel3 = document.getElementById("non-selection-panel-3");
+// New panels for explanations and final demographics
+const explanationsPanel = document.getElementById("explanations-panel");
 const demographicsPanel = document.getElementById("demographics-panel");
+
+// Explanations panel elements
+const selectedRuleText = document.getElementById("selected-rule-text");
+const selectedRuleReason = document.getElementById("selected-rule-reason");
+const selectedExplanation = document.getElementById("selected-explanation");
+const selectedWordCount = document.getElementById("selected-word-count");
+const nonSelectedRuleText = document.getElementById("non-selected-rule-text");
+const nonSelectedRuleReason = document.getElementById("non-selected-rule-reason");
+const nonSelectedExplanation = document.getElementById("non-selected-explanation");
+const nonSelectedWordCount = document.getElementById("non-selected-word-count");
+const explanationsContinue = document.getElementById("explanations-continue");
 
 // Final demographics fields
 const demoAgeFinal = document.getElementById("demo-age-final");
@@ -79,10 +88,6 @@ const demoExplanationSkillFinal = document.getElementById("demo-explanation-skil
 const demoAttentionCheckFinal = document.getElementById("demo-attention-check-final");
 const submitFinalBtn = document.getElementById("submit-final");
 
-// Non-selection questionnaire buttons
-const nonSelectionNext1 = document.getElementById("non-selection-next-1");
-const nonSelectionNext2 = document.getElementById("non-selection-next-2");
-const nonSelectionNext3 = document.getElementById("non-selection-next-3");
 
 let chatFile = null;
 let parsedMessages = [];
@@ -105,8 +110,8 @@ let lastGenerated = null;
 let deviceType = null;
 let transcriptMeta = null;
 let rulesGenerated = false;
-let unselectedRulesForQuestionnaire = []; // 3 unselected rules for non-selection questionnaires
-let nonSelectionResponses = {}; // Store responses for non-selection questionnaires
+let selectedRuleForExplanation = null; // 1 selected rule for explanation
+let nonSelectedRuleForExplanation = null; // 1 non-selected rule for explanation
 
 // Timestamps for tracking progress through pages
 let timestamps = {
@@ -132,9 +137,7 @@ const PAGES = {
   GROUP: 'group',
   GENERATION: 'generation',
   SELECTION: 'selection',
-  NON_SELECTION_1: 'non-selection-1',
-  NON_SELECTION_2: 'non-selection-2',
-  NON_SELECTION_3: 'non-selection-3',
+  EXPLANATIONS: 'explanations',
   DEMOGRAPHICS: 'demographics'
 };
 
@@ -177,9 +180,7 @@ function showPage(pageName) {
   if (groupPanel) groupPanel.hidden = true;
   if (generationPanel) generationPanel.hidden = true;
   if (rankingPanel) rankingPanel.hidden = true;
-  if (nonSelectionPanel1) nonSelectionPanel1.hidden = true;
-  if (nonSelectionPanel2) nonSelectionPanel2.hidden = true;
-  if (nonSelectionPanel3) nonSelectionPanel3.hidden = true;
+  if (explanationsPanel) explanationsPanel.hidden = true;
   if (demographicsPanel) demographicsPanel.hidden = true;
 
   // Show the requested panel
@@ -201,14 +202,8 @@ function showPage(pageName) {
     case PAGES.SELECTION:
       if (rankingPanel) rankingPanel.hidden = false;
       break;
-    case PAGES.NON_SELECTION_1:
-      if (nonSelectionPanel1) nonSelectionPanel1.hidden = false;
-      break;
-    case PAGES.NON_SELECTION_2:
-      if (nonSelectionPanel2) nonSelectionPanel2.hidden = false;
-      break;
-    case PAGES.NON_SELECTION_3:
-      if (nonSelectionPanel3) nonSelectionPanel3.hidden = false;
+    case PAGES.EXPLANATIONS:
+      if (explanationsPanel) explanationsPanel.hidden = false;
       break;
     case PAGES.DEMOGRAPHICS:
       if (demographicsPanel) demographicsPanel.hidden = false;
@@ -1841,72 +1836,6 @@ generateBtn.addEventListener("click", async () => {
   }
 });
 
-// Function to select 3 unselected rules for non-selection questionnaires
-function selectUnselectedRules() {
-  const unselected = availableRules.slice(); // Get all unselected rules
-
-  if (unselected.length < 3) {
-    // Not enough unselected rules - this shouldn't happen normally
-    return unselected;
-  }
-
-  // Group unselected rules by source
-  const bySource = {
-    generic: [],
-    contextual: [],
-    metadata: []
-  };
-
-  unselected.forEach(rule => {
-    if (Array.isArray(rule.sources)) {
-      // For merged rules, pick the first source for categorization
-      const primarySource = rule.sources[0];
-      if (bySource[primarySource]) {
-        bySource[primarySource].push(rule);
-      }
-    } else if (rule.source && bySource[rule.source]) {
-      bySource[rule.source].push(rule);
-    }
-  });
-
-  const selected = [];
-
-  // Try to pick one from each source
-  ['generic', 'contextual', 'metadata'].forEach(source => {
-    if (bySource[source].length > 0 && selected.length < 3) {
-      const randomIndex = Math.floor(Math.random() * bySource[source].length);
-      selected.push(bySource[source][randomIndex]);
-      // Remove from the source array to avoid duplicates
-      bySource[source].splice(randomIndex, 1);
-    }
-  });
-
-  // If we still need more rules (e.g., some sources had no rules)
-  while (selected.length < 3) {
-    // Collect remaining rules from all sources
-    const remaining = [...bySource.generic, ...bySource.contextual, ...bySource.metadata];
-
-    if (remaining.length === 0) {
-      // No more rules available, break
-      break;
-    }
-
-    const randomIndex = Math.floor(Math.random() * remaining.length);
-    selected.push(remaining[randomIndex]);
-
-    // Remove the selected rule from its source
-    const selectedRule = remaining[randomIndex];
-    ['generic', 'contextual', 'metadata'].forEach(source => {
-      const idx = bySource[source].findIndex(r => r.id === selectedRule.id);
-      if (idx !== -1) {
-        bySource[source].splice(idx, 1);
-      }
-    });
-  }
-
-  return selected;
-}
-
 submitRankingsBtn.addEventListener("click", async () => {
   rankingError.textContent = "";
 
@@ -1928,23 +1857,31 @@ submitRankingsBtn.addEventListener("click", async () => {
     return;
   }
 
-  // Select 3 unselected rules for non-selection questionnaires
-  unselectedRulesForQuestionnaire = selectUnselectedRules();
+  // Get unselected rules
+  const unselectedRules = allRules.filter(rule => !rankedRules.some(r => r.id === rule.id));
 
-  if (unselectedRulesForQuestionnaire.length < 3) {
-    rankingError.textContent = "Not enough unselected rules to continue. Please deselect some rules first.";
+  if (unselectedRules.length < 1) {
+    rankingError.textContent = "Not enough unselected rules to continue.";
     return;
   }
 
-  // Populate the first non-selection panel with the first unselected rule
-  const rule1 = unselectedRulesForQuestionnaire[0];
-  document.getElementById('non-selection-rule-text-1').textContent = rule1.text;
-  document.getElementById('non-selection-rule-reason-1').textContent = rule1.reason || '';
-  if (!rule1.reason) {
-    document.getElementById('non-selection-rule-reason-1').hidden = true;
-  } else {
-    document.getElementById('non-selection-rule-reason-1').hidden = false;
-  }
+  // Randomly select 1 rule from selected rules
+  selectedRuleForExplanation = rankedRules[Math.floor(Math.random() * rankedRules.length)];
+
+  // Randomly select 1 rule from non-selected rules
+  nonSelectedRuleForExplanation = unselectedRules[Math.floor(Math.random() * unselectedRules.length)];
+
+  // Populate the explanations panel
+  if (selectedRuleText) selectedRuleText.textContent = selectedRuleForExplanation.text;
+  if (selectedRuleReason) selectedRuleReason.textContent = selectedRuleForExplanation.reason || '';
+  if (nonSelectedRuleText) nonSelectedRuleText.textContent = nonSelectedRuleForExplanation.text;
+  if (nonSelectedRuleReason) nonSelectedRuleReason.textContent = nonSelectedRuleForExplanation.reason || '';
+
+  // Clear previous explanations
+  if (selectedExplanation) selectedExplanation.value = '';
+  if (nonSelectedExplanation) nonSelectedExplanation.value = '';
+  updateWordCount(selectedExplanation, selectedWordCount);
+  updateWordCount(nonSelectedExplanation, nonSelectedWordCount);
 
   // Record timestamp for rankings submitted
   timestamps.rankingsSubmitted = new Date().toISOString();
@@ -1952,152 +1889,67 @@ submitRankingsBtn.addEventListener("click", async () => {
   // Save progress to MongoDB
   await saveProgress('rankingsSubmitted');
 
-  // Navigate to first non-selection panel
-  navigateToPage(PAGES.NON_SELECTION_1);
+  // Navigate to explanations panel
+  navigateToPage(PAGES.EXPLANATIONS);
 });
 
-// Helper function to get radio button value
-function getRadioValue(name) {
-  const radio = document.querySelector(`input[name="${name}"]:checked`);
-  return radio ? radio.value : null;
+// Helper function to count words in a string
+function countWords(text) {
+  if (!text || typeof text !== 'string') return 0;
+  return text.trim().split(/\s+/).filter(word => word.length > 0).length;
 }
 
-// Helper function to validate all radio buttons are answered
-function validateNonSelectionForm(panelNumber) {
-  const prefix = `ns${panelNumber}`;
-  const questions = ['unclear', 'not-relevant', 'generality', 'conflicts',
-                     'unclear-violation', 'time-consuming', 'unfair', 'resistance', 'liked-others'];
+// Helper function to update word count display
+function updateWordCount(textarea, wordCountElement) {
+  if (!textarea || !wordCountElement) return;
+  const count = countWords(textarea.value);
+  const isValid = count >= 15;
+  wordCountElement.textContent = `${count} words (minimum 15 required)`;
+  wordCountElement.style.color = isValid ? 'var(--success)' : 'var(--muted)';
 
-  for (const q of questions) {
-    if (!getRadioValue(`${prefix}-${q}`)) {
-      return false;
-    }
-  }
-  return true;
+  // Update continue button state
+  updateExplanationsContinueButton();
 }
 
-// Non-selection panel 1 - Next button
-if (nonSelectionNext1) {
-  nonSelectionNext1.addEventListener('click', async () => {
-    if (!validateNonSelectionForm(1)) {
-      alert('Please answer all questions before continuing.');
-      return;
-    }
+// Helper function to validate both explanations
+function validateExplanations() {
+  const selectedCount = countWords(selectedExplanation?.value || '');
+  const nonSelectedCount = countWords(nonSelectedExplanation?.value || '');
+  return selectedCount >= 15 && nonSelectedCount >= 15;
+}
 
-    // Collect responses
-    nonSelectionResponses.rule1 = {
-      rule: {
-        text: unselectedRulesForQuestionnaire[0].text,
-        reason: unselectedRulesForQuestionnaire[0].reason,
-        sources: unselectedRulesForQuestionnaire[0].sources || [unselectedRulesForQuestionnaire[0].source],
-        id: unselectedRulesForQuestionnaire[0].id
-      },
-      unclear: getRadioValue('ns1-unclear'),
-      notRelevant: getRadioValue('ns1-not-relevant'),
-      generality: getRadioValue('ns1-generality'),
-      conflicts: getRadioValue('ns1-conflicts'),
-      unclearViolation: getRadioValue('ns1-unclear-violation'),
-      timeConsuming: getRadioValue('ns1-time-consuming'),
-      unfair: getRadioValue('ns1-unfair'),
-      resistance: getRadioValue('ns1-resistance'),
-      likedOthers: getRadioValue('ns1-liked-others'),
-      otherReason: document.getElementById('ns1-other-reason')?.value || ''
-    };
+// Update continue button state
+function updateExplanationsContinueButton() {
+  if (!explanationsContinue) return;
+  explanationsContinue.disabled = !validateExplanations();
+}
 
-    // Save progress to MongoDB
-    await saveProgress('nonSelection1');
-
-    // Populate the second non-selection panel
-    const rule2 = unselectedRulesForQuestionnaire[1];
-    document.getElementById('non-selection-rule-text-2').textContent = rule2.text;
-    document.getElementById('non-selection-rule-reason-2').textContent = rule2.reason || '';
-    if (!rule2.reason) {
-      document.getElementById('non-selection-rule-reason-2').hidden = true;
-    } else {
-      document.getElementById('non-selection-rule-reason-2').hidden = false;
-    }
-
-    // Navigate to second panel
-    navigateToPage(PAGES.NON_SELECTION_2);
+// Add event listeners for explanations textareas
+if (selectedExplanation && selectedWordCount) {
+  selectedExplanation.addEventListener('input', () => {
+    updateWordCount(selectedExplanation, selectedWordCount);
   });
 }
 
-// Non-selection panel 2 - Next button
-if (nonSelectionNext2) {
-  nonSelectionNext2.addEventListener('click', async () => {
-    if (!validateNonSelectionForm(2)) {
-      alert('Please answer all questions before continuing.');
-      return;
-    }
-
-    // Collect responses
-    nonSelectionResponses.rule2 = {
-      rule: {
-        text: unselectedRulesForQuestionnaire[1].text,
-        reason: unselectedRulesForQuestionnaire[1].reason,
-        sources: unselectedRulesForQuestionnaire[1].sources || [unselectedRulesForQuestionnaire[1].source],
-        id: unselectedRulesForQuestionnaire[1].id
-      },
-      unclear: getRadioValue('ns2-unclear'),
-      notRelevant: getRadioValue('ns2-not-relevant'),
-      generality: getRadioValue('ns2-generality'),
-      conflicts: getRadioValue('ns2-conflicts'),
-      unclearViolation: getRadioValue('ns2-unclear-violation'),
-      timeConsuming: getRadioValue('ns2-time-consuming'),
-      unfair: getRadioValue('ns2-unfair'),
-      resistance: getRadioValue('ns2-resistance'),
-      likedOthers: getRadioValue('ns2-liked-others'),
-      otherReason: document.getElementById('ns2-other-reason')?.value || ''
-    };
-
-    // Save progress to MongoDB
-    await saveProgress('nonSelection2');
-
-    // Populate the third non-selection panel
-    const rule3 = unselectedRulesForQuestionnaire[2];
-    document.getElementById('non-selection-rule-text-3').textContent = rule3.text;
-    document.getElementById('non-selection-rule-reason-3').textContent = rule3.reason || '';
-    if (!rule3.reason) {
-      document.getElementById('non-selection-rule-reason-3').hidden = true;
-    } else {
-      document.getElementById('non-selection-rule-reason-3').hidden = false;
-    }
-
-    // Navigate to third panel
-    navigateToPage(PAGES.NON_SELECTION_3);
+if (nonSelectedExplanation && nonSelectedWordCount) {
+  nonSelectedExplanation.addEventListener('input', () => {
+    updateWordCount(nonSelectedExplanation, nonSelectedWordCount);
   });
 }
 
-// Non-selection panel 3 - Next button (goes to demographics)
-if (nonSelectionNext3) {
-  nonSelectionNext3.addEventListener('click', async () => {
-    if (!validateNonSelectionForm(3)) {
-      alert('Please answer all questions before continuing.');
+// Explanations continue button
+if (explanationsContinue) {
+  explanationsContinue.addEventListener('click', async () => {
+    if (!validateExplanations()) {
+      alert('Please provide at least 15 words for both explanations.');
       return;
     }
 
-    // Collect responses
-    nonSelectionResponses.rule3 = {
-      rule: {
-        text: unselectedRulesForQuestionnaire[2].text,
-        reason: unselectedRulesForQuestionnaire[2].reason,
-        sources: unselectedRulesForQuestionnaire[2].sources || [unselectedRulesForQuestionnaire[2].source],
-        id: unselectedRulesForQuestionnaire[2].id
-      },
-      unclear: getRadioValue('ns3-unclear'),
-      notRelevant: getRadioValue('ns3-not-relevant'),
-      generality: getRadioValue('ns3-generality'),
-      conflicts: getRadioValue('ns3-conflicts'),
-      unclearViolation: getRadioValue('ns3-unclear-violation'),
-      timeConsuming: getRadioValue('ns3-time-consuming'),
-      unfair: getRadioValue('ns3-unfair'),
-      resistance: getRadioValue('ns3-resistance'),
-      likedOthers: getRadioValue('ns3-liked-others'),
-      otherReason: document.getElementById('ns3-other-reason')?.value || ''
-    };
+    // Record timestamp
+    timestamps.explanationsComplete = new Date().toISOString();
 
     // Save progress to MongoDB
-    await saveProgress('nonSelection3');
+    await saveProgress('explanations');
 
     // Navigate to demographics panel
     navigateToPage(PAGES.DEMOGRAPHICS);
@@ -2342,12 +2194,23 @@ async function saveProgress(pageName) {
       };
     }
 
-    // Include non-selection responses if available
-    if (Object.keys(nonSelectionResponses).length > 0) {
-      payload.nonSelection = {
-        rule1: nonSelectionResponses.rule1 || null,
-        rule2: nonSelectionResponses.rule2 || null,
-        rule3: nonSelectionResponses.rule3 || null,
+    // Include explanations if available
+    if (selectedRuleForExplanation || nonSelectedRuleForExplanation) {
+      payload.explanations = {
+        selectedRule: selectedRuleForExplanation ? {
+          text: selectedRuleForExplanation.text,
+          reason: selectedRuleForExplanation.reason,
+          sources: selectedRuleForExplanation.sources || [selectedRuleForExplanation.source],
+          id: selectedRuleForExplanation.id,
+          explanation: selectedExplanation?.value || ''
+        } : null,
+        nonSelectedRule: nonSelectedRuleForExplanation ? {
+          text: nonSelectedRuleForExplanation.text,
+          reason: nonSelectedRuleForExplanation.reason,
+          sources: nonSelectedRuleForExplanation.sources || [nonSelectedRuleForExplanation.source],
+          id: nonSelectedRuleForExplanation.id,
+          explanation: nonSelectedExplanation?.value || ''
+        } : null
       };
     }
 

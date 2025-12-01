@@ -187,271 +187,32 @@
       <div id="ranking-error" class="errors" role="alert"></div>
     </section>
 
-    <section class="panel" id="non-selection-panel-1" hidden>
-      <h2>Why didn't you select this rule?</h2>
-      <div class="rule-display">
-        <p id="non-selection-rule-text-1" class="rule-text" style="font-size: 1.1em; font-weight: 500; margin-bottom: 0.5rem;"></p>
-        <p id="non-selection-rule-reason-1" class="rule-reason" style="color: var(--muted); margin-bottom: 1.5rem;"></p>
-      </div>
+    <section class="panel" id="explanations-panel" hidden>
+      <p>You have selected the following rule as relevant to your group. Briefly tell us why you selected this rule.</p>
 
-      <p style="margin-bottom: 1rem;">Please indicate which of the following reasons apply (select Yes or No for each):</p>
-
-      <div class="field">
-        <span>The rule's meaning is unclear or incomplete</span>
-        <div class="options">
-          <label><input type="radio" name="ns1-unclear" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns1-unclear" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>The rule addresses problems not relevant to my group</span>
-        <div class="options">
-          <label><input type="radio" name="ns1-not-relevant" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns1-not-relevant" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>The rule is too general or too specific for my situation</span>
-        <div class="options">
-          <label><input type="radio" name="ns1-generality" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns1-generality" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>The rule conflicts with my group's convention or purpose</span>
-        <div class="options">
-          <label><input type="radio" name="ns1-conflicts" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns1-conflicts" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>I couldn't tell if someone violated this rule</span>
-        <div class="options">
-          <label><input type="radio" name="ns1-unclear-violation" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns1-unclear-violation" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>Enforcing this rule would be too time-consuming</span>
-        <div class="options">
-          <label><input type="radio" name="ns1-time-consuming" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns1-time-consuming" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>This rule feels unfair or would discourage participation</span>
-        <div class="options">
-          <label><input type="radio" name="ns1-unfair" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns1-unfair" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>Group members would likely resist this rule</span>
-        <div class="options">
-          <label><input type="radio" name="ns1-resistance" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns1-resistance" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>I liked other rules more (slot limit)</span>
-        <div class="options">
-          <label><input type="radio" name="ns1-liked-others" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns1-liked-others" value="No" /> No</label>
-        </div>
+      <div class="rule-display" style="border: 1px solid var(--border); border-radius: 12px; padding: 1rem; margin: 1rem 0; background: var(--accent-soft);">
+        <p id="selected-rule-text" class="rule-text" style="font-size: 1.1em; font-weight: 700; margin-bottom: 0.5rem;"></p>
+        <p id="selected-rule-reason" class="rule-reason" style="color: var(--muted); margin: 0;"></p>
       </div>
 
       <label class="field">
-        <span>Any other reason for not selecting this rule? (optional, 200 characters max)</span>
-        <textarea id="ns1-other-reason" maxlength="200" placeholder="Enter any other reason..." style="min-height: 80px;"></textarea>
+        <textarea id="selected-explanation" placeholder="Explain why you selected this rule (minimum 15 words)..." style="min-height: 100px; width: 100%;"></textarea>
+        <span id="selected-word-count" style="color: var(--muted); font-size: 0.9rem; margin-top: 0.25rem;">0 words (minimum 15 required)</span>
       </label>
 
-      <button id="non-selection-next-1" class="primary">Next</button>
-    </section>
+      <p style="margin-top: 2rem;">You did not select the following rule for your group. Briefly tell us why you did not select this rule.</p>
 
-    <section class="panel" id="non-selection-panel-2" hidden>
-      <h2>Why didn't you select this rule?</h2>
-      <div class="rule-display">
-        <p id="non-selection-rule-text-2" class="rule-text" style="font-size: 1.1em; font-weight: 500; margin-bottom: 0.5rem;"></p>
-        <p id="non-selection-rule-reason-2" class="rule-reason" style="color: var(--muted); margin-bottom: 1.5rem;"></p>
-      </div>
-
-      <p style="margin-bottom: 1rem;">Please indicate which of the following reasons apply (select Yes or No for each):</p>
-
-      <div class="field">
-        <span>The rule's meaning is unclear or incomplete</span>
-        <div class="options">
-          <label><input type="radio" name="ns2-unclear" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns2-unclear" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>The rule addresses problems not relevant to my group</span>
-        <div class="options">
-          <label><input type="radio" name="ns2-not-relevant" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns2-not-relevant" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>The rule is too general or too specific for my situation</span>
-        <div class="options">
-          <label><input type="radio" name="ns2-generality" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns2-generality" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>The rule conflicts with my group's convention or purpose</span>
-        <div class="options">
-          <label><input type="radio" name="ns2-conflicts" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns2-conflicts" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>I couldn't tell if someone violated this rule</span>
-        <div class="options">
-          <label><input type="radio" name="ns2-unclear-violation" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns2-unclear-violation" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>Enforcing this rule would be too time-consuming</span>
-        <div class="options">
-          <label><input type="radio" name="ns2-time-consuming" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns2-time-consuming" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>This rule feels unfair or would discourage participation</span>
-        <div class="options">
-          <label><input type="radio" name="ns2-unfair" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns2-unfair" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>Group members would likely resist this rule</span>
-        <div class="options">
-          <label><input type="radio" name="ns2-resistance" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns2-resistance" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>I liked other rules more (slot limit)</span>
-        <div class="options">
-          <label><input type="radio" name="ns2-liked-others" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns2-liked-others" value="No" /> No</label>
-        </div>
+      <div class="rule-display" style="border: 1px solid var(--border); border-radius: 12px; padding: 1rem; margin: 1rem 0; background: var(--accent-soft);">
+        <p id="non-selected-rule-text" class="rule-text" style="font-size: 1.1em; font-weight: 700; margin-bottom: 0.5rem;"></p>
+        <p id="non-selected-rule-reason" class="rule-reason" style="color: var(--muted); margin: 0;"></p>
       </div>
 
       <label class="field">
-        <span>Any other reason for not selecting this rule? (optional, 200 characters max)</span>
-        <textarea id="ns2-other-reason" maxlength="200" placeholder="Enter any other reason..." style="min-height: 80px;"></textarea>
+        <textarea id="non-selected-explanation" placeholder="Explain why you did not select this rule (minimum 15 words)..." style="min-height: 100px; width: 100%;"></textarea>
+        <span id="non-selected-word-count" style="color: var(--muted); font-size: 0.9rem; margin-top: 0.25rem;">0 words (minimum 15 required)</span>
       </label>
 
-      <button id="non-selection-next-2" class="primary">Next</button>
-    </section>
-
-    <section class="panel" id="non-selection-panel-3" hidden>
-      <h2>Why didn't you select this rule?</h2>
-      <div class="rule-display">
-        <p id="non-selection-rule-text-3" class="rule-text" style="font-size: 1.1em; font-weight: 500; margin-bottom: 0.5rem;"></p>
-        <p id="non-selection-rule-reason-3" class="rule-reason" style="color: var(--muted); margin-bottom: 1.5rem;"></p>
-      </div>
-
-      <p style="margin-bottom: 1rem;">Please indicate which of the following reasons apply (select Yes or No for each):</p>
-
-      <div class="field">
-        <span>The rule's meaning is unclear or incomplete</span>
-        <div class="options">
-          <label><input type="radio" name="ns3-unclear" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns3-unclear" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>The rule addresses problems not relevant to my group</span>
-        <div class="options">
-          <label><input type="radio" name="ns3-not-relevant" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns3-not-relevant" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>The rule is too general or too specific for my situation</span>
-        <div class="options">
-          <label><input type="radio" name="ns3-generality" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns3-generality" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>The rule conflicts with my group's convention or purpose</span>
-        <div class="options">
-          <label><input type="radio" name="ns3-conflicts" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns3-conflicts" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>I couldn't tell if someone violated this rule</span>
-        <div class="options">
-          <label><input type="radio" name="ns3-unclear-violation" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns3-unclear-violation" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>Enforcing this rule would be too time-consuming</span>
-        <div class="options">
-          <label><input type="radio" name="ns3-time-consuming" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns3-time-consuming" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>This rule feels unfair or would discourage participation</span>
-        <div class="options">
-          <label><input type="radio" name="ns3-unfair" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns3-unfair" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>Group members would likely resist this rule</span>
-        <div class="options">
-          <label><input type="radio" name="ns3-resistance" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns3-resistance" value="No" /> No</label>
-        </div>
-      </div>
-
-      <div class="field">
-        <span>I liked other rules more (slot limit)</span>
-        <div class="options">
-          <label><input type="radio" name="ns3-liked-others" value="Yes" required /> Yes</label>
-          <label><input type="radio" name="ns3-liked-others" value="No" /> No</label>
-        </div>
-      </div>
-
-      <label class="field">
-        <span>Any other reason for not selecting this rule? (optional, 200 characters max)</span>
-        <textarea id="ns3-other-reason" maxlength="200" placeholder="Enter any other reason..." style="min-height: 80px;"></textarea>
-      </label>
-
-      <button id="non-selection-next-3" class="primary">Next</button>
+      <button id="explanations-continue" class="primary" disabled>Continue</button>
     </section>
 
     <section class="panel" id="demographics-panel" hidden>
