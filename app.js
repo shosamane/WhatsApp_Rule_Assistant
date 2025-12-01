@@ -1952,13 +1952,27 @@ if (explanationsContinue) {
 
 // Helper function to validate final demographics
 function validateFinalDemographics() {
+  console.log('[Validate] Checking element references...');
   if (!demoAgeFinal || !demoGenderFinal || !demoLocationFinal ||
       !demoEducationFinal || !demoWaFrequencyFinal ||
       !demoWaAdminGroupsFinal || !demoAdminDurationFinal ||
       !demoWritingConfidenceFinal || !demoExplanationSkillFinal || !demoAttentionCheckFinal) {
+    console.log('[Validate] Missing element reference:', {
+      age: !!demoAgeFinal,
+      gender: !!demoGenderFinal,
+      location: !!demoLocationFinal,
+      education: !!demoEducationFinal,
+      waFreq: !!demoWaFrequencyFinal,
+      waAdminGroups: !!demoWaAdminGroupsFinal,
+      adminDur: !!demoAdminDurationFinal,
+      writingConf: !!demoWritingConfidenceFinal,
+      explainSkill: !!demoExplanationSkillFinal,
+      attCheck: !!demoAttentionCheckFinal
+    });
     return false;
   }
 
+  console.log('[Validate] Checking field values...');
   const age = demoAgeFinal.value.trim();
   const gender = demoGenderFinal.value;
   const location = demoLocationFinal.value.trim();
@@ -1970,19 +1984,41 @@ function validateFinalDemographics() {
   const explainSkill = demoExplanationSkillFinal.value;
   const attCheck = demoAttentionCheckFinal.value;
 
-  return age && gender && location && education && waFreq &&
+  console.log('[Validate] Field values:', {
+    age: age,
+    gender: gender,
+    location: location,
+    education: education,
+    waFreq: waFreq,
+    waAdminGroups: waAdminGroups,
+    adminDur: adminDur,
+    writingConf: writingConf,
+    explainSkill: explainSkill,
+    attCheck: attCheck
+  });
+
+  const result = age && gender && location && education && waFreq &&
          waAdminGroups && adminDur &&
          writingConf && explainSkill && attCheck;
+  console.log('[Validate] Final result:', result);
+  return result;
 }
 
 // Final submit button - submits everything
 if (submitFinalBtn) {
   submitFinalBtn.addEventListener('click', async () => {
-    if (!validateFinalDemographics()) {
+    console.log('[Submit] Button clicked');
+    console.log('[Submit] Validating demographics...');
+    const isValid = validateFinalDemographics();
+    console.log('[Submit] Validation result:', isValid);
+
+    if (!isValid) {
+      console.log('[Submit] Validation failed - showing alert');
       alert('Please complete all demographic questions before submitting.');
       return;
     }
 
+    console.log('[Submit] Validation passed - proceeding with submission');
     // Disable button to prevent double submission
     submitFinalBtn.disabled = true;
     submitFinalBtn.textContent = 'Submitting...';
