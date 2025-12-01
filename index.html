@@ -17,7 +17,7 @@
       <!-- University Logos -->
       <div class="logo-header">
         <img src="logos/cornell_logo_simple_b31b1b.png" alt="Cornell University" class="university-logo" />
-        <img src="logos/RNB_H_RED_WHITE_RGB.png" alt="Rutgers University" class="university-logo" />
+        <img src="logos/RNB_H_RED_RGB.png" alt="Rutgers University" class="university-logo" />
       </div>
 
       <p>This is an academic study conducted by researchers at Cornell University and Rutgers University.</p>
@@ -147,11 +147,9 @@
     </section>
 
     <section class="panel" id="group-panel" hidden>
-      <h2>1. Describe the Group</h2>
       <label class="field">
-        <span>Group type</span>
         <select id="group-type">
-          <option value="" selected disabled>Select a category</option>
+          <option value="" selected disabled>Which of the following categories best fits your WhatsApp group</option>
           <option value="Personal">Personal (Family / Friends / Social circle / Neighborhood)</option>
           <option value="Professional">Professional (Workplace / Project / Alumni / Professional Network / Client)</option>
           <option value="Learning">Learning (Class / Study / Research group / School parent group)</option>
@@ -166,11 +164,10 @@
         <span>Describe other group type</span>
         <input id="group-type-other" type="text" placeholder="e.g., Resident hobby meetup, language exchange, carpool coordination" />
       </div>
-      <!-- <p class="tip">Gemini API access is preconfigured for this prototype.</p> -->
     </section>
 
     <section class="panel" id="generation-panel" hidden>
-      <p>Click the button below to generate guidelines. This will take approximately one minute.</p>
+      <p>Click the button below to get suggestions for group rules based on your WhatsApp group chat.</p>
       <button id="generate-btn" class="primary" disabled>Click here for some suggestive guidelines</button>
       <div id="loading" class="loading" hidden>
         <span class="spinner" aria-hidden="true"></span>
@@ -183,28 +180,11 @@
     </section>
 
     <section class="panel" id="ranking-panel" hidden>
-      <h2>Select Rules for Your Group</h2>
-      <p>Select up to 5 rules that you think are very relevant for your group and that you would likely set for your group. You must select at least one rule.</p>
+      <p style="margin-bottom: 1.5rem;">Select up to 5 rules that you think are relevant to your group and that you are likely to set for your group. You must select between 1–5 rules.</p>
       <p id="ranking-note" class="note" hidden></p>
-      <div class="ranking-layout">
-        <section class="ranking-column">
-          <header class="column-header">
-            <h3>Selected Rules</h3>
-            <p>Drag rules here that you would set for your group. You can remove them by dragging back to the pool.</p>
-          </header>
-          <div id="ranked-list" class="rule-list drop-target" role="list" aria-label="Selected rules"></div>
-        </section>
-        <section class="ranking-column">
-          <header class="column-header">
-            <h3>All Rules</h3>
-            <p>Start by dragging rules from here.</p>
-          </header>
-          <div id="available-list" class="rule-list" role="list" aria-label="Available rules"></div>
-        </section>
-      </div>
-      <button id="submit-rankings" class="primary outline">Submit Selection</button>
+      <div id="rules-list" class="rules-checkbox-list"></div>
+      <button id="submit-rankings" class="primary" style="margin-top: 1.5rem;">Submit Selections</button>
       <div id="ranking-error" class="errors" role="alert"></div>
-      <div id="ranking-summary" class="summary" hidden></div>
     </section>
 
     <section class="panel" id="non-selection-panel-1" hidden>

@@ -1012,6 +1012,83 @@ function clearRulesUI() {
   }
 }
 
+// Render rules with checkboxes (replaces drag-and-drop interface)
+function renderRulesWithCheckboxes() {
+  const rulesListContainer = document.getElementById('rules-list');
+  if (!rulesListContainer) return;
+
+  rulesListContainer.innerHTML = '';
+
+  allRules.forEach((rule) => {
+    const item = document.createElement('div');
+    item.className = 'rule-checkbox-item';
+    item.dataset.ruleId = rule.id;
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = `rule-${rule.id}`;
+    checkbox.dataset.ruleId = rule.id;
+
+    const content = document.createElement('div');
+    content.className = 'rule-checkbox-content';
+
+    const label = document.createElement('label');
+    label.htmlFor = `rule-${rule.id}`;
+    label.style.cursor = 'pointer';
+    label.style.flex = '1';
+
+    const text = document.createElement('p');
+    text.className = 'rule-checkbox-text';
+    text.textContent = rule.text;
+
+    const reason = document.createElement('p');
+    reason.className = 'rule-checkbox-reason';
+    reason.textContent = rule.reason || '';
+
+    label.appendChild(text);
+    if (rule.reason) {
+      label.appendChild(reason);
+    }
+
+    content.appendChild(label);
+    item.appendChild(checkbox);
+    item.appendChild(content);
+
+    // Handle checkbox change with 5-rule limit
+    checkbox.addEventListener('change', (e) => {
+      const checkedCount = rulesListContainer.querySelectorAll('input[type="checkbox"]:checked').length;
+
+      if (e.target.checked) {
+        if (checkedCount > 5) {
+          e.target.checked = false;
+          alert('You can select a maximum of 5 rules.');
+          return;
+        }
+        item.classList.add('selected');
+      } else {
+        item.classList.remove('selected');
+      }
+
+      // Update ranked rules array
+      updateRankedRulesFromCheckboxes();
+    });
+
+    rulesListContainer.appendChild(item);
+  });
+}
+
+// Update rankedRules array based on checkbox selections
+function updateRankedRulesFromCheckboxes() {
+  const rulesListContainer = document.getElementById('rules-list');
+  if (!rulesListContainer) return;
+
+  const checkedBoxes = rulesListContainer.querySelectorAll('input[type="checkbox"]:checked');
+  rankedRules = Array.from(checkedBoxes).map(checkbox => {
+    const ruleId = checkbox.dataset.ruleId;
+    return allRules.find(rule => rule.id === ruleId);
+  }).filter(Boolean);
+}
+
 function buildStats(messages, participantsMap, extras = {}) {
   if (!messages.length) {
     return {
@@ -1697,7 +1774,7 @@ generateBtn.addEventListener("click", async () => {
     allRules = shuffle(merged);
     availableRules = [...allRules];
     rankedRules = [];
-    renderRuleLists();
+    renderRulesWithCheckboxes();
     setLoadingState("idle");
 
     // Mark rules as generated and show proceed instruction
@@ -1805,8 +1882,16 @@ submitRankingsBtn.addEventListener("click", async () => {
     return;
   }
 
-  if (!rankedRules.length) {
-    rankingError.textContent = "Select at least one rule.";
+  // Update rankedRules from checkboxes
+  updateRankedRulesFromCheckboxes();
+
+  if (rankedRules.length < 1) {
+    rankingError.textContent = "You must select at least 1 rule.";
+    return;
+  }
+
+  if (rankedRules.length > 5) {
+    rankingError.textContent = "You can select a maximum of 5 rules.";
     return;
   }
 
