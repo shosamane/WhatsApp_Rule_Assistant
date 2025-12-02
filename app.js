@@ -727,12 +727,12 @@ function checkTranscriptEligibility(messages) {
   }
   result.uniqueParticipants = unique.size;
 
-  // Thresholds (updated): span >= 90 days; total >= 500; unique >= 3; last 30 days count >= 50
-  result.spanOk = result.spanDays >= 90;
-  result.totalOk = result.totalMessages >= 500;
+  // Thresholds (updated): unique >= 3; last 30 days count >= 50
+  result.spanOk = true; // No longer checking span
+  result.totalOk = true; // No longer checking total messages
   result.uniqueOk = result.uniqueParticipants >= 3;
   result.recentOk = result.last30Count >= 50;
-  result.ok = result.spanOk && result.totalOk && result.uniqueOk && result.recentOk;
+  result.ok = result.uniqueOk && result.recentOk;
   return result;
 }
 
@@ -947,14 +947,12 @@ async function loadChatFile(chat, displayLabel) {
     };
     if (!elig.ok) {
       const bullets = [];
-      if (!elig.spanOk) bullets.push(`- spans at least 90 days (current: ${elig.spanDays} days)`);
-      if (!elig.totalOk) bullets.push(`- has at least 500 total messages (current: ${elig.totalMessages})`);
       if (!elig.uniqueOk) bullets.push(`- has at least 3 unique participants (current: ${elig.uniqueParticipants})`);
       if (!elig.recentOk) bullets.push(`- has at least 50 messages in the last 30 days (current: ${elig.last30Count})`);
 
       fileStatus.style.color = "var(--error)";
       fileStatus.textContent = [
-        "This transcript doesn’t meet the minimum activity criteria.",
+        "This transcript doesn't meet the minimum activity criteria.",
         "Upload a chat that:",
         ...bullets,
       ].join(" \n");
@@ -1898,8 +1896,17 @@ function updateWordCount(textarea, wordCountElement) {
   if (!textarea || !wordCountElement) return;
   const count = countWords(textarea.value);
   const isValid = count >= 15;
-  wordCountElement.textContent = `${count} words (minimum 15 required)`;
-  wordCountElement.style.color = isValid ? 'var(--success)' : 'var(--muted)';
+
+  if (isValid) {
+    wordCountElement.textContent = `${count} words`;
+    wordCountElement.style.color = 'var(--success)';
+  } else if (count > 0) {
+    wordCountElement.textContent = `${count} words - Please write more substantively`;
+    wordCountElement.style.color = 'var(--error)';
+  } else {
+    wordCountElement.textContent = `${count} words`;
+    wordCountElement.style.color = 'var(--muted)';
+  }
 
   // Update continue button state
   updateExplanationsContinueButton();
@@ -1935,7 +1942,7 @@ if (nonSelectedExplanation && nonSelectedWordCount) {
 if (explanationsContinue) {
   explanationsContinue.addEventListener('click', async () => {
     if (!validateExplanations()) {
-      alert('Please provide at least 15 words for both explanations.');
+      alert('Please write more substantively for both explanations.');
       return;
     }
 
