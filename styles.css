@@ -1,5 +1,5 @@
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   font-size: 16px;
@@ -12,17 +12,6 @@
   --accent-soft: rgba(0, 94, 255, 0.1);
   --error: #c62828;
   --success: #1b5e20;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #111315;
-    --panel: #181a1d;
-    --border: #2a2d31;
-    --text: #f1f5f9;
-    --muted: #9aa3b1;
-    --accent-soft: rgba(0, 122, 255, 0.18);
-  }
 }
 
 * {
