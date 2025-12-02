@@ -1013,7 +1013,7 @@ function clearRulesUI() {
   }
   // Reset generation state
   rulesGenerated = false;
-  generateBtn.textContent = "Click here for some suggestive guidelines";
+  generateBtn.textContent = "Show me rules";
   if (proceedInstruction) {
     proceedInstruction.hidden = true;
   }
@@ -1802,7 +1802,7 @@ generateBtn.addEventListener("click", async () => {
     // Mark rules as generated and show proceed instruction
     rulesGenerated = true;
     generateBtn.disabled = true;
-    generateBtn.textContent = "Guidelines Generated";
+    generateBtn.textContent = "Rules generated";
     if (proceedInstruction) {
       proceedInstruction.hidden = false;
     }
