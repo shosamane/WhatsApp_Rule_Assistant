@@ -174,6 +174,9 @@ function navigateToPage(pageName, addToHistory = true) {
 
 // Show the specified page (hide all others)
 function showPage(pageName) {
+  // Scroll to top when changing pages
+  window.scrollTo(0, 0);
+
   // Hide all panels
   if (landingPanel) landingPanel.hidden = true;
   if (uploadPanel) uploadPanel.hidden = true;
