@@ -2251,7 +2251,6 @@ function buildSubmissionPayload({ selectedRules, genericSelections, contextualSe
     groupType: lastGenerated?.groupType || (groupTypeSelect.value || ''),
     stats: lastGenerated?.stats || JSON.parse(dropZone.dataset.stats || '{}'),
     eligibility: { meetsActivityCriteria },
-    pseudonymMap: Object.fromEntries(pseudoMap),
     preview: previewLines,
     generated: {
       generic: lastGenerated?.generic || [],
