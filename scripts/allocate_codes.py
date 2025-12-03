@@ -12,8 +12,8 @@ from datetime import datetime
 
 # MongoDB connection settings
 MONGO_URI = "mongodb://localhost:27017/"  # Update with your MongoDB URI
-DB_NAME = "whatsapp_rules"  # Update with your database name
-COLLECTION_NAME = "completion_codes"
+DB_NAME = "whatsapp_rule_assistant"  # Must match server.js database
+COLLECTION_NAME = "completion_codes"  # Separate from submissions collection
 
 # Webapp URL for CSV export
 WEBAPP_URL = "go.rutgers.edu/whatsapprules"
