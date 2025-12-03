@@ -424,6 +424,13 @@ input:focus {
   flex-wrap: wrap;
 }
 
+/* Demographics fields spacing */
+#randomizable-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
 @media (max-width: 600px) {
   .panel {
     padding: 1.25rem;
@@ -439,6 +446,33 @@ input:focus {
 
   .consent-buttons button {
     width: 100%;
+  }
+
+  /* Ensure text wraps properly on mobile */
+  .field span {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+
+  /* Make selects and inputs fit better on mobile */
+  select,
+  input[type="text"],
+  input[type="number"],
+  textarea {
+    width: 100%;
+    max-width: 100%;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  /* Reduce panel gap on mobile for better density */
+  .panel {
+    gap: 0.75rem;
+  }
+
+  /* More spacing between demographics fields on mobile */
+  #randomizable-fields {
+    gap: 1.75rem;
   }
 }
 
