@@ -114,11 +114,18 @@ app.post(`${base}/api/get-code`, async (req, res) => {
       { returnDocument: 'after' }
     );
 
-    if (!result.value) {
+    console.log('[get-code] findOneAndUpdate result:', JSON.stringify(result, null, 2));
+
+    // Handle both result.value (newer drivers) and result directly (older drivers)
+    const document = result.value || result;
+
+    if (!document || !document.code) {
+      console.error('[get-code] No document found. Result structure:', result);
       return res.status(404).json({ error: 'no_codes_available' });
     }
 
-    return res.json({ code: result.value.code });
+    console.log('[get-code] Successfully retrieved code:', document.code);
+    return res.json({ code: document.code });
   } catch (err) {
     console.error('get-code error', err);
     if (/mongodb driver not installed/i.test(String(err))) {

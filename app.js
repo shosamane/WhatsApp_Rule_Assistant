@@ -2348,14 +2348,19 @@ function getOrCreateSessionId() {
 // Generate a unique completion code from pre-allocated pool
 async function generateCompletionCode(platform, userId) {
   try {
+    console.log('[generateCompletionCode] Requesting code for platform:', platform, 'userId:', userId);
+
     const resp = await fetch('/webhook3/api/get-code', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ platform, userId })
     });
 
+    console.log('[generateCompletionCode] Response status:', resp.status);
+
     if (!resp.ok) {
       const error = await resp.json().catch(() => ({ error: 'unknown' }));
+      console.error('[generateCompletionCode] Server error:', error);
       if (error.error === 'no_codes_available') {
         throw new Error('No completion codes available for your platform. Please contact the study administrator.');
       }
@@ -2363,9 +2368,10 @@ async function generateCompletionCode(platform, userId) {
     }
 
     const data = await resp.json();
+    console.log('[generateCompletionCode] Successfully received code:', data.code);
     return data.code;
   } catch (error) {
-    console.error('Error getting completion code:', error);
+    console.error('[generateCompletionCode] Error getting completion code:', error);
     throw new Error(error.message || 'Unable to generate completion code. Please contact support.');
   }
 }
