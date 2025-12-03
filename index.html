@@ -77,9 +77,34 @@
     </section>
 
     <section class="panel" id="upload-panel" hidden>
-      <!-- Prolific/Clickworker ID Input -->
-      <p>Share your Prolific/ Clickworker ID. We only use this information to process your reimbursement.</p>
-      <input id="source-id" type="text" placeholder="" style="width: 100%; padding: 0.65rem 0.75rem; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: inherit; font: inherit; margin-bottom: 1rem;" />
+      <!-- Recruitment Source Selection -->
+      <div class="field" style="margin-bottom: 1.5rem;">
+        <span>From which platform were you recruited for this study?</span>
+        <div class="options" style="margin-top: 0.5rem;">
+          <label style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="radio" name="recruitment-source" value="clickworker" />
+            <span>Clickworker</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="radio" name="recruitment-source" value="prolific" />
+            <span>Prolific</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="radio" name="recruitment-source" value="referral" />
+            <span>I was referred by researchers</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="field" id="source-id-field" hidden style="margin-bottom: 1.5rem;">
+        <span id="source-id-label">Your Participant ID</span>
+        <input id="source-id" type="text" placeholder="Enter your ID" style="width: 100%; padding: 0.65rem 0.75rem; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: inherit; font: inherit;" />
+        <p class="tip" style="color: var(--error); margin-top: 0.5rem;">
+          <strong>Important:</strong> Please ensure you select the correct recruitment source and enter the correct ID.
+          Payment processing requires verification through the recruitment platform.
+          Incorrect information may result in payment delays or inability to process your compensation.
+        </p>
+      </div>
 
       <p>Upload WhatsApp group chat from one of your groups. Please select a group with:</p>
 

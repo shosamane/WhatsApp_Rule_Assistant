@@ -77,6 +77,57 @@ app.post(`${base}/api/generate`, async (req, res) => {
   }
 });
 
+// ---- get completion code ----
+app.post(`${base}/api/get-code`, async (req, res) => {
+  try {
+    const { platform, userId } = req.body || {};
+
+    // Validate platform
+    const validPlatforms = ['clickworker', 'prolific', 'referral'];
+    if (!platform || !validPlatforms.includes(platform)) {
+      return res.status(400).json({ error: 'invalid_platform', hint: 'Platform must be one of: clickworker, prolific, referral' });
+    }
+
+    // Validate userId
+    if (!userId || typeof userId !== 'string' || !userId.trim()) {
+      return res.status(400).json({ error: 'missing_userId' });
+    }
+
+    const client = await getMongo();
+    const db = client.db(mongoDbName);
+    const coll = db.collection('completion_codes');
+
+    // Atomically find and update one available code for the specified platform
+    const result = await coll.findOneAndUpdate(
+      {
+        platform: platform,
+        sharedWithPlatform: true,
+        sharedWithParticipant: { $ne: true }
+      },
+      {
+        $set: {
+          sharedWithParticipant: true,
+          userId: userId,
+          usedAt: new Date().toISOString()
+        }
+      },
+      { returnDocument: 'after' }
+    );
+
+    if (!result.value) {
+      return res.status(404).json({ error: 'no_codes_available' });
+    }
+
+    return res.json({ code: result.value.code });
+  } catch (err) {
+    console.error('get-code error', err);
+    if (/mongodb driver not installed/i.test(String(err))) {
+      return res.status(500).json({ error: 'driver_missing', hint: 'Install with: npm install mongodb' });
+    }
+    return res.status(500).json({ error: 'code_retrieval_failed' });
+  }
+});
+
 // ---- store submission ----
 app.post(`${base}/api/store`, async (req, res) => {
   try {

@@ -72,6 +72,12 @@ const nonSelectedExplanation = document.getElementById("non-selected-explanation
 const nonSelectedWordCount = document.getElementById("non-selected-word-count");
 const explanationsContinue = document.getElementById("explanations-continue");
 
+// Recruitment source elements (in upload panel)
+const recruitmentSourceRadios = document.querySelectorAll('input[name="recruitment-source"]');
+const sourceIdField = document.getElementById("source-id-field");
+const sourceIdLabel = document.getElementById("source-id-label");
+const sourceIdInput = document.getElementById("source-id");
+
 // Final demographics fields
 const demoAgeFinal = document.getElementById("demo-age-final");
 const demoGenderFinal = document.getElementById("demo-gender-final");
@@ -100,6 +106,10 @@ let loadingResetTimer = null;
 let originalsById = new Map();
 let meetsActivityCriteria = true;
 let wasDragging = false;
+
+// Recruitment source tracking
+let recruitmentSource = null;
+let participantId = null;
 let consentGiven = false;
 let consentDeclined = false;
 let consentTimestamp = null;
@@ -2009,6 +2019,39 @@ if (explanationsContinue) {
   });
 }
 
+// Recruitment source handlers (in upload panel)
+if (recruitmentSourceRadios && recruitmentSourceRadios.length > 0) {
+  recruitmentSourceRadios.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      recruitmentSource = e.target.value;
+
+      // Show source ID field and update label based on selection
+      if (sourceIdField && sourceIdLabel) {
+        sourceIdField.hidden = false;
+
+        if (recruitmentSource === 'clickworker') {
+          sourceIdLabel.textContent = 'Your Clickworker ID';
+          sourceIdInput.placeholder = 'Enter your Clickworker ID';
+        } else if (recruitmentSource === 'prolific') {
+          sourceIdLabel.textContent = 'Your Prolific ID';
+          sourceIdInput.placeholder = 'Enter your Prolific ID';
+        } else if (recruitmentSource === 'referral') {
+          sourceIdLabel.textContent = 'Your Referral Code';
+          sourceIdInput.placeholder = 'Enter your referral code';
+        }
+      }
+    });
+  });
+}
+
+if (sourceIdInput) {
+  sourceIdInput.addEventListener('input', () => {
+    const value = sourceIdInput.value.trim();
+    sourceId = value;
+    participantId = value; // Keep both in sync
+  });
+}
+
 // Store the correct attention check answer
 let correctAttentionCheckAnswer = null;
 
@@ -2156,9 +2199,9 @@ if (submitFinalBtn) {
     submitFinalBtn.textContent = 'Submitting...';
 
     try {
-      // Generate unique 6-digit completion code
-      const completionCode = generateCompletionCode();
-      console.log('[Submit] Generated completion code:', completionCode);
+      // Get unique completion code from pre-allocated pool (filtered by recruitment platform)
+      const completionCode = await generateCompletionCode(recruitmentSource, sourceId);
+      console.log('[Submit] Retrieved completion code:', completionCode);
 
       // Build selected rules data
       const selectedRules = rankedRules.map((rule) => ({ rule }));
@@ -2234,6 +2277,10 @@ function buildSubmissionPayload({ selectedRules, genericSelections, contextualSe
       declined: consentDeclined,
       timestamp: consentTimestamp,
     },
+    recruitment: {
+      source: recruitmentSource,
+      participantId: participantId,
+    },
     demographics: {
       age: demoAgeFinal?.value || '',
       gender: demoGenderFinal?.value || '',
@@ -2301,11 +2348,29 @@ function getOrCreateSessionId() {
   }
 }
 
-// Generate a unique 6-digit completion code
-function generateCompletionCode() {
-  // Generate random 6-digit number (100000 to 999999)
-  const code = Math.floor(100000 + Math.random() * 900000);
-  return code.toString();
+// Generate a unique completion code from pre-allocated pool
+async function generateCompletionCode(platform, userId) {
+  try {
+    const resp = await fetch('/webhook3/api/get-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ platform, userId })
+    });
+
+    if (!resp.ok) {
+      const error = await resp.json().catch(() => ({ error: 'unknown' }));
+      if (error.error === 'no_codes_available') {
+        throw new Error('No completion codes available for your platform. Please contact the study administrator.');
+      }
+      throw new Error('Failed to retrieve completion code.');
+    }
+
+    const data = await resp.json();
+    return data.code;
+  } catch (error) {
+    console.error('Error getting completion code:', error);
+    throw new Error(error.message || 'Unable to generate completion code. Please contact support.');
+  }
 }
 
 async function storeSubmission(data) {
@@ -2336,6 +2401,10 @@ async function saveProgress(pageName) {
         given: consentGiven,
         declined: consentDeclined,
         timestamp: consentTimestamp,
+      } : null,
+      recruitment: (recruitmentSource && participantId) ? {
+        source: recruitmentSource,
+        participantId: participantId,
       } : null,
       demographics: consentApproved ? {
         age: demoAge?.value || '',
@@ -2508,10 +2577,16 @@ if (consentDeclineBtn) {
 
 if (approveBtn) {
   approveBtn.addEventListener('click', async () => {
+    // Validate recruitment source is selected
+    if (!recruitmentSource) {
+      alert('Please select the platform you were recruited from.');
+      return;
+    }
+
     // Capture sourceId from upload page
     const enteredId = (sourceIdInput?.value || '').trim();
     if (!enteredId) {
-      alert('Please enter your Prolific/Clickworker ID.');
+      alert('Please enter your ID.');
       return;
     }
 
@@ -2520,8 +2595,9 @@ if (approveBtn) {
       return;
     }
 
-    // Set global sourceId
+    // Set global sourceId and participantId
     sourceId = enteredId;
+    participantId = enteredId;
     consentApproved = true;
 
     // Record timestamp and save progress
