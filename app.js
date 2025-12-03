@@ -2012,7 +2012,12 @@ let correctAttentionCheckAnswer = null;
 // Initialize demographics randomization (attention check and field order)
 function initializeDemographicsRandomization() {
   // Only run once
-  if (correctAttentionCheckAnswer !== null) return;
+  if (correctAttentionCheckAnswer !== null) {
+    console.log('[Demographics] Already randomized, skipping');
+    return;
+  }
+
+  console.log('[Demographics] Starting randomization...');
 
   // Randomly select the correct attention check answer
   const attentionCheckOptions = [
@@ -2026,21 +2031,36 @@ function initializeDemographicsRandomization() {
   const randomIndex = Math.floor(Math.random() * attentionCheckOptions.length);
   correctAttentionCheckAnswer = attentionCheckOptions[randomIndex];
 
+  console.log('[Demographics] Randomly selected correct answer:', correctAttentionCheckAnswer);
+
   // Update the attention check question text
   const attentionCheckQuestion = document.getElementById('attention-check-question');
   if (attentionCheckQuestion) {
     attentionCheckQuestion.textContent = `If you are reading this question carefully, please select "${correctAttentionCheckAnswer}"`;
+    console.log('[Demographics] Updated question text');
+  } else {
+    console.warn('[Demographics] Could not find attention-check-question element');
   }
 
   // Randomize the order of fields within randomizable-fields div
   const randomizableContainer = document.getElementById('randomizable-fields');
   if (randomizableContainer) {
     const fields = Array.from(randomizableContainer.children);
-    // Shuffle the fields using Fisher-Yates algorithm
+    console.log('[Demographics] Found', fields.length, 'fields to shuffle');
+
+    // Shuffle using Fisher-Yates algorithm
     for (let i = fields.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      randomizableContainer.insertBefore(fields[j], fields[i]);
+      [fields[i], fields[j]] = [fields[j], fields[i]];
     }
+
+    // Clear container and re-append in shuffled order
+    randomizableContainer.innerHTML = '';
+    fields.forEach(field => randomizableContainer.appendChild(field));
+
+    console.log('[Demographics] Fields shuffled successfully');
+  } else {
+    console.warn('[Demographics] Could not find randomizable-fields container');
   }
 }
 
