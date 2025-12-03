@@ -1898,17 +1898,20 @@ submitRankingsBtn.addEventListener("click", async () => {
 function updateWordCount(textarea, wordCountElement) {
   if (!textarea || !wordCountElement) return;
   const count = countWords(textarea.value);
-  const isValid = count >= 15;
+  const isValid = count >= 5;
 
   if (isValid) {
-    wordCountElement.textContent = `${count} words`;
-    wordCountElement.style.color = 'var(--success)';
+    // Don't show anything when valid
+    wordCountElement.textContent = '';
+    wordCountElement.style.color = '';
   } else if (count > 0) {
-    wordCountElement.textContent = `${count} words - Please write more substantively`;
+    // Only show warning message, no word count
+    wordCountElement.textContent = 'Please write more substantively';
     wordCountElement.style.color = 'var(--error)';
   } else {
-    wordCountElement.textContent = `${count} words`;
-    wordCountElement.style.color = 'var(--muted)';
+    // Show warning for empty field
+    wordCountElement.textContent = 'Please write more substantively';
+    wordCountElement.style.color = 'var(--error)';
   }
 
   // Update continue button state
@@ -1919,7 +1922,7 @@ function updateWordCount(textarea, wordCountElement) {
 function validateExplanations() {
   const selectedCount = countWords(selectedExplanation?.value || '');
   const nonSelectedCount = countWords(nonSelectedExplanation?.value || '');
-  return selectedCount >= 15 && nonSelectedCount >= 15;
+  return selectedCount >= 5 && nonSelectedCount >= 5;
 }
 
 // Update continue button state
@@ -1933,11 +1936,19 @@ if (selectedExplanation && selectedWordCount) {
   selectedExplanation.addEventListener('input', () => {
     updateWordCount(selectedExplanation, selectedWordCount);
   });
+  // Disable paste to ensure participants type their responses
+  selectedExplanation.addEventListener('paste', (e) => {
+    e.preventDefault();
+  });
 }
 
 if (nonSelectedExplanation && nonSelectedWordCount) {
   nonSelectedExplanation.addEventListener('input', () => {
     updateWordCount(nonSelectedExplanation, nonSelectedWordCount);
+  });
+  // Disable paste to ensure participants type their responses
+  nonSelectedExplanation.addEventListener('paste', (e) => {
+    e.preventDefault();
   });
 }
 
@@ -1955,9 +1966,50 @@ if (explanationsContinue) {
     // Save progress to MongoDB
     await saveProgress('explanations');
 
+    // Initialize demographics randomization before navigating
+    initializeDemographicsRandomization();
+
     // Navigate to demographics panel
     navigateToPage(PAGES.DEMOGRAPHICS);
   });
+}
+
+// Store the correct attention check answer
+let correctAttentionCheckAnswer = null;
+
+// Initialize demographics randomization (attention check and field order)
+function initializeDemographicsRandomization() {
+  // Only run once
+  if (correctAttentionCheckAnswer !== null) return;
+
+  // Randomly select the correct attention check answer
+  const attentionCheckOptions = [
+    'Strongly Disagree',
+    'Disagree',
+    'Somewhat Agree',
+    'Agree',
+    'Strongly Agree'
+  ];
+
+  const randomIndex = Math.floor(Math.random() * attentionCheckOptions.length);
+  correctAttentionCheckAnswer = attentionCheckOptions[randomIndex];
+
+  // Update the attention check question text
+  const attentionCheckQuestion = document.getElementById('attention-check-question');
+  if (attentionCheckQuestion) {
+    attentionCheckQuestion.textContent = `If you are reading this question carefully, please select "${correctAttentionCheckAnswer}"`;
+  }
+
+  // Randomize the order of fields within randomizable-fields div
+  const randomizableContainer = document.getElementById('randomizable-fields');
+  if (randomizableContainer) {
+    const fields = Array.from(randomizableContainer.children);
+    // Shuffle the fields using Fisher-Yates algorithm
+    for (let i = fields.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      randomizableContainer.insertBefore(fields[j], fields[i]);
+    }
+  }
 }
 
 // Helper function to validate final demographics
@@ -2004,9 +2056,12 @@ function validateFinalDemographics() {
     adminDur: adminDur,
     writingConf: writingConf,
     explainSkill: explainSkill,
-    attCheck: attCheck
+    attCheck: attCheck,
+    correctAnswer: correctAttentionCheckAnswer
   });
 
+  // Don't validate the attention check answer - just record it
+  // User will manually review later for payment decisions
   const result = age && gender && location && education && waFreq &&
          waAdminGroups && adminDur &&
          writingConf && explainSkill && attCheck;
@@ -2109,6 +2164,7 @@ function buildSubmissionPayload({ selectedRules, genericSelections, contextualSe
       writingConfidence: demoWritingConfidenceFinal?.value || '',
       explanationSkill: demoExplanationSkillFinal?.value || '',
       attentionCheck: demoAttentionCheckFinal?.value || '',
+      attentionCheckCorrectAnswer: correctAttentionCheckAnswer,
     },
     transcript: transcriptMeta || {},
     groupType: lastGenerated?.groupType || (groupTypeSelect.value || ''),

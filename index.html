@@ -87,7 +87,7 @@
         <li>At least 3 members</li>
         <li>At least 50 messages in the last 30 days</li>
       </ul>
-
+      <p style="margin-bottom: 0.5rem;">If you need instructions on how to upload WhatsApp group chat, please scroll down to find detailed instruction based on your device.</p>
       <p style="margin-bottom: 1rem;">We anonymize the chat on your device by removing names, phone numbers, addresses, photos etc. before creating group rules based on group conversations. We will delete the chat after creating group rules.</p>
 
       <div id="drop-zone" class="drop-zone" tabindex="0" aria-label="Drop WhatsApp zip or chat .txt here">
@@ -111,7 +111,7 @@
 
       <button id="approve-btn" class="primary" disabled>Approve and Continue</button>
 
-      <p style="margin-top: 1.5rem; margin-bottom: 0.5rem;">If you need guidance regarding how to export WhatsApp group chat, please follow step-by-step instructions below based on your device where you have access to WhatsApp:</p>
+      <p style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Please find the step-by-step instructions to export the chat transcript as a zip file for your WhatsApp group based on your device type. Please go through all the instructions carefully:</p>
 
       <details class="instruction-section">
         <summary><strong>Desktop (Windows/Mac)</strong></summary>
@@ -180,7 +180,7 @@
     </section>
 
     <section class="panel" id="ranking-panel" hidden>
-      <p style="margin-bottom: 1rem;">Select up to 5 rules that you think are relevant to your group and that you are likely to set for your group. You must select between 1–5 rules.</p>
+      <p style="margin-bottom: 1rem; font-size: 1.25rem; color: #003d82;">Select up to 5 rules that you think are relevant to your group and that you are likely to set for your group. You must select between 1–5 rules.</p>
       <p id="ranking-note" class="note" hidden></p>
       <div id="rules-list" class="rules-checkbox-list"></div>
       <button id="submit-rankings" class="primary" style="margin-top: 1rem;">Submit Selections</button>
@@ -197,7 +197,7 @@
 
       <label class="field">
         <textarea id="selected-explanation" placeholder="Explain why you selected this rule..." style="min-height: 100px; width: 100%;"></textarea>
-        <span id="selected-word-count" style="color: var(--muted); font-size: 0.9rem; margin-top: 0.25rem;">0 words</span>
+        <span id="selected-word-count" style="color: var(--error); font-size: 0.9rem; margin-top: 0.25rem;">Please write more substantively</span>
       </label>
 
       <p style="margin-top: 1.5rem;">You did not select the following rule for your group. Briefly tell us why you did not select this rule.</p>
@@ -209,7 +209,7 @@
 
       <label class="field">
         <textarea id="non-selected-explanation" placeholder="Explain why you did not select this rule..." style="min-height: 100px; width: 100%;"></textarea>
-        <span id="non-selected-word-count" style="color: var(--muted); font-size: 0.9rem; margin-top: 0.25rem;">0 words</span>
+        <span id="non-selected-word-count" style="color: var(--error); font-size: 0.9rem; margin-top: 0.25rem;">Please write more substantively</span>
       </label>
 
       <button id="explanations-continue" class="primary" disabled>Continue</button>
@@ -219,112 +219,113 @@
       <h2>About You</h2>
       <p>Please answer these final questions about yourself.</p>
 
-      <label class="field">
-        <span>Age</span>
-        <input id="demo-age-final" type="number" min="18" max="100" placeholder="Enter your age" />
-      </label>
+      <div id="randomizable-fields">
+        <label class="field">
+          <span>Age</span>
+          <input id="demo-age-final" type="number" min="18" max="100" placeholder="Enter your age" />
+        </label>
 
-      <label class="field">
-        <span>Gender</span>
-        <select id="demo-gender-final">
-          <option value="" selected disabled>Select</option>
-          <option value="Male">Male</option>
-          <option value="Female">Female</option>
-          <option value="Prefer not to say">Prefer not to say</option>
-        </select>
-      </label>
+        <label class="field">
+          <span>Gender</span>
+          <select id="demo-gender-final">
+            <option value="" selected disabled>Select</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Prefer not to say">Prefer not to say</option>
+          </select>
+        </label>
 
-      <label class="field">
-        <span>District and State of residence</span>
-        <input id="demo-location-final" type="text" placeholder="e.g., Bangalore, Karnataka" />
-      </label>
+        <label class="field">
+          <span>District and State of residence</span>
+          <input id="demo-location-final" type="text" placeholder="e.g., Bangalore, Karnataka" />
+        </label>
 
-      <label class="field">
-        <span>Education level</span>
-        <select id="demo-education-final">
-          <option value="" selected disabled>Select your highest education</option>
-          <option value="Below 10th standard">Below 10th standard</option>
-          <option value="10th standard">10th standard</option>
-          <option value="12th standard / PUC">12th standard / PUC</option>
-          <option value="Diploma">Diploma</option>
-          <option value="Bachelor's degree">Bachelor's degree</option>
-          <option value="Master's degree">Master's degree</option>
-          <option value="Doctoral degree (PhD)">Doctoral degree (PhD)</option>
-          <option value="Professional degree (Medical, Law, etc.)">Professional degree (Medical, Law, etc.)</option>
-        </select>
-      </label>
+        <label class="field">
+          <span>Education level</span>
+          <select id="demo-education-final">
+            <option value="" selected disabled>Select your highest education</option>
+            <option value="No school education">No school education</option>
+            <option value="Primary school">Primary school</option>
+            <option value="High school">High school</option>
+            <option value="Diploma">Diploma</option>
+            <option value="Bachelor's">Bachelor's</option>
+            <option value="Master's">Master's</option>
+            <option value="Doctoral">Doctoral</option>
+          </select>
+        </label>
 
-      <label class="field">
-        <span>How often do you use WhatsApp?</span>
-        <select id="demo-wa-frequency-final">
-          <option value="" selected disabled>Select</option>
-          <option value="Never">Never</option>
-          <option value="Rarely">Rarely</option>
-          <option value="Sometimes">Sometimes</option>
-          <option value="Often">Often</option>
-          <option value="Daily">Daily</option>
-        </select>
-      </label>
+        <label class="field">
+          <span>How often do you use WhatsApp?</span>
+          <select id="demo-wa-frequency-final">
+            <option value="" selected disabled>Select</option>
+            <option value="Never">Never</option>
+            <option value="Rarely">Rarely</option>
+            <option value="Sometimes">Sometimes</option>
+            <option value="Often">Often</option>
+            <option value="Daily">Daily</option>
+          </select>
+        </label>
 
-      <label class="field">
-        <span>How many WhatsApp groups do you serve as an admin or moderator?</span>
-        <select id="demo-wa-admin-groups-final">
-          <option value="" selected disabled>Select</option>
-          <option value="0">0</option>
-          <option value="1-3">1-3</option>
-          <option value="4-7">4-7</option>
-          <option value="8-15">8-15</option>
-          <option value="16+">16+</option>
-        </select>
-      </label>
+        <label class="field">
+          <span>How many WhatsApp groups do you serve as an admin or moderator?</span>
+          <select id="demo-wa-admin-groups-final">
+            <option value="" selected disabled>Select</option>
+            <option value="0">0</option>
+            <option value="1-3">1-3</option>
+            <option value="4-7">4-7</option>
+            <option value="8-15">8-15</option>
+            <option value="16+">16+</option>
+          </select>
+        </label>
 
-      <label class="field">
-        <span>How long have you been a WhatsApp admin?</span>
-        <select id="demo-admin-duration-final">
-          <option value="" selected disabled>Select</option>
-          <option value="None">None</option>
-          <option value="Less than 1 year">Less than 1 year</option>
-          <option value="1-3 years">1-3 years</option>
-          <option value="3-5 years">3-5 years</option>
-          <option value="5+ years">5+ years</option>
-        </select>
-      </label>
+        <label class="field">
+          <span>How long have you been a WhatsApp admin?</span>
+          <select id="demo-admin-duration-final">
+            <option value="" selected disabled>Select</option>
+            <option value="None">None</option>
+            <option value="Less than 1 year">Less than 1 year</option>
+            <option value="1-3 years">1-3 years</option>
+            <option value="3-5 years">3-5 years</option>
+            <option value="5+ years">5+ years</option>
+          </select>
+        </label>
 
-      <label class="field">
-        <span>Please indicate your level of agreement: "I am confident in my ability to write clear guidelines"</span>
-        <select id="demo-writing-confidence-final">
-          <option value="" selected disabled>Select your response</option>
-          <option value="Not at all">Not at all</option>
-          <option value="Slightly">Slightly</option>
-          <option value="Moderately">Moderately</option>
-          <option value="Very">Very</option>
-          <option value="Extremely">Extremely</option>
-        </select>
-      </label>
+        <label class="field">
+          <span>Please indicate your level of agreement: "I am confident in my ability to write clear rules for my WhatsApp groups"</span>
+          <select id="demo-writing-confidence-final">
+            <option value="" selected disabled>Select your response</option>
+            <option value="Not at all">Not at all</option>
+            <option value="Slightly">Slightly</option>
+            <option value="Moderately">Moderately</option>
+            <option value="Very">Very</option>
+            <option value="Extremely">Extremely</option>
+          </select>
+        </label>
 
-      <label class="field">
-        <span>Please indicate your level of agreement: "I am good at explaining complex policies simply"</span>
-        <select id="demo-explanation-skill-final">
-          <option value="" selected disabled>Select your response</option>
-          <option value="Not at all">Not at all</option>
-          <option value="Slightly">Slightly</option>
-          <option value="Moderately">Moderately</option>
-          <option value="Very">Very</option>
-          <option value="Extremely">Extremely</option>
-        </select>
-      </label>
+        <label class="field">
+          <span>Please indicate your level of agreement: "I am good at explaining to group members the reason behind setting certain group rules."</span>
+          <select id="demo-explanation-skill-final">
+            <option value="" selected disabled>Select your response</option>
+            <option value="Not at all">Not at all</option>
+            <option value="Slightly">Slightly</option>
+            <option value="Moderately">Moderately</option>
+            <option value="Very">Very</option>
+            <option value="Extremely">Extremely</option>
+          </select>
+        </label>
 
-      <label class="field">
-        <span>If you are reading this question carefully, please select "Somewhat Agree"</span>
-        <select id="demo-attention-check-final">
-          <option value="" selected disabled>Select your response</option>
-          <option value="Strongly Disagree">Strongly Disagree</option>
-          <option value="Disagree">Disagree</option>
-          <option value="Somewhat Agree">Somewhat Agree</option>
-          <option value="Agree">Agree</option>
-          <option value="Strongly Agree">Strongly Agree</option>
-        </select>
-      </label>
+        <label class="field" id="attention-check-field">
+          <span id="attention-check-question">If you are reading this question carefully, please select "Somewhat Agree"</span>
+          <select id="demo-attention-check-final">
+            <option value="" selected disabled>Select your response</option>
+            <option value="Strongly Disagree">Strongly Disagree</option>
+            <option value="Disagree">Disagree</option>
+            <option value="Somewhat Agree">Somewhat Agree</option>
+            <option value="Agree">Agree</option>
+            <option value="Strongly Agree">Strongly Agree</option>
+          </select>
+        </label>
+      </div>
 
       <button id="submit-final" class="primary">Submit</button>
       <div id="final-submission-message" class="summary" hidden></div>
