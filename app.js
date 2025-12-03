@@ -2042,25 +2042,37 @@ function initializeDemographicsRandomization() {
     console.warn('[Demographics] Could not find attention-check-question element');
   }
 
-  // Randomize the order of fields within randomizable-fields div
+  // Randomly position the attention check among other fields
   const randomizableContainer = document.getElementById('randomizable-fields');
-  if (randomizableContainer) {
-    const fields = Array.from(randomizableContainer.children);
-    console.log('[Demographics] Found', fields.length, 'fields to shuffle');
+  const attentionCheckField = document.getElementById('attention-check-field');
 
-    // Shuffle using Fisher-Yates algorithm
-    for (let i = fields.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [fields[i], fields[j]] = [fields[j], fields[i]];
+  if (randomizableContainer && attentionCheckField) {
+    const allFields = Array.from(randomizableContainer.children);
+    console.log('[Demographics] Found', allFields.length, 'total fields');
+
+    // Remove attention check from its current position
+    const attentionCheckIndex = allFields.indexOf(attentionCheckField);
+    if (attentionCheckIndex !== -1) {
+      allFields.splice(attentionCheckIndex, 1);
+      console.log('[Demographics] Removed attention check from position', attentionCheckIndex);
     }
 
-    // Clear container and re-append in shuffled order
-    randomizableContainer.innerHTML = '';
-    fields.forEach(field => randomizableContainer.appendChild(field));
+    // Randomly select a position (0 to allFields.length, inclusive)
+    const randomPosition = Math.floor(Math.random() * (allFields.length + 1));
+    console.log('[Demographics] Inserting attention check at position', randomPosition);
 
-    console.log('[Demographics] Fields shuffled successfully');
+    // Insert attention check at random position
+    if (randomPosition === allFields.length) {
+      // Insert at end
+      randomizableContainer.appendChild(attentionCheckField);
+    } else {
+      // Insert before the field at randomPosition
+      randomizableContainer.insertBefore(attentionCheckField, allFields[randomPosition]);
+    }
+
+    console.log('[Demographics] Attention check repositioned successfully');
   } else {
-    console.warn('[Demographics] Could not find randomizable-fields container');
+    console.warn('[Demographics] Could not find container or attention check field');
   }
 }
 
