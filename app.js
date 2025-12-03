@@ -1,10 +1,6 @@
-// ============================================
-// EXPERIMENT CONFIGURATION
-// ============================================
-// Toggle this flag to show/hide AI-generated rationales in the UI
 // true = show rationales (reasons why rules are suggested)
 // false = hide rationales (only show rule text)
-const SHOW_RATIONALE = true;
+const SHOW_RATIONALE = false;
 // ============================================
 
 const dropZone = document.getElementById("drop-zone");
