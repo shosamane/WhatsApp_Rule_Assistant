@@ -2153,6 +2153,10 @@ if (submitFinalBtn) {
     submitFinalBtn.textContent = 'Submitting...';
 
     try {
+      // Generate unique 6-digit completion code
+      const completionCode = generateCompletionCode();
+      console.log('[Submit] Generated completion code:', completionCode);
+
       // Build selected rules data
       const selectedRules = rankedRules.map((rule) => ({ rule }));
       const hasSrc = (rule, type) => Array.isArray(rule.sources) ? rule.sources.includes(type) : rule.source === type;
@@ -2171,16 +2175,25 @@ if (submitFinalBtn) {
         selectedRules,
         genericSelections,
         contextualSelections,
-        metadataSelections
+        metadataSelections,
+        completionCode
       });
 
       // Submit to server
-      await storeSubmission(payload);
+      const response = await storeSubmission(payload);
+      console.log('[Submit] Server response:', response);
 
-      // Show success message
+      // Show success message with completion code
       const msgDiv = document.getElementById('final-submission-message');
       if (msgDiv) {
-        msgDiv.innerHTML = '<p><strong>Thank you!</strong> Your responses have been submitted successfully. You may now close this page.</p>';
+        msgDiv.innerHTML = `
+          <p><strong>Thank you!</strong></p>
+          <p style="margin: 1rem 0; font-size: 1.1rem;">
+            <strong>Your completion code is: <span style="font-size: 1.3rem; color: var(--accent); font-weight: 700;">${completionCode}</span></strong>
+          </p>
+          <p style="margin: 0.5rem 0;">Please copy this code and paste it on Clickworker/Prolific to receive your payment.</p>
+          <p>Your responses have been submitted successfully. You may now close this page.</p>
+        `;
         msgDiv.hidden = false;
       }
 
@@ -2195,7 +2208,7 @@ if (submitFinalBtn) {
   });
 }
 
-function buildSubmissionPayload({ selectedRules, genericSelections, contextualSelections, metadataSelections }) {
+function buildSubmissionPayload({ selectedRules, genericSelections, contextualSelections, metadataSelections, completionCode }) {
   const sessionId = getOrCreateSessionId();
   const selected = selectedRules.map(item => ({
     text: item.rule.text,
@@ -2211,6 +2224,7 @@ function buildSubmissionPayload({ selectedRules, genericSelections, contextualSe
   return {
     sessionId,
     sourceId,
+    completionCode,
     timestamps,
     consent: {
       given: consentGiven,
@@ -2283,6 +2297,13 @@ function getOrCreateSessionId() {
   } catch {
     return String(Date.now()) + '-' + Math.random().toString(16).slice(2);
   }
+}
+
+// Generate a unique 6-digit completion code
+function generateCompletionCode() {
+  // Generate random 6-digit number (100000 to 999999)
+  const code = Math.floor(100000 + Math.random() * 900000);
+  return code.toString();
 }
 
 async function storeSubmission(data) {
