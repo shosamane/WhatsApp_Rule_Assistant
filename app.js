@@ -74,9 +74,6 @@ const explanationsContinue = document.getElementById("explanations-continue");
 
 // Recruitment source elements (in upload panel)
 const recruitmentSourceRadios = document.querySelectorAll('input[name="recruitment-source"]');
-const sourceIdField = document.getElementById("source-id-field");
-const sourceIdLabel = document.getElementById("source-id-label");
-const sourceIdInput = document.getElementById("source-id");
 
 // Final demographics fields
 const demoAgeFinal = document.getElementById("demo-age-final");
