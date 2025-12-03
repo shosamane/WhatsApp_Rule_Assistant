@@ -1894,28 +1894,36 @@ submitRankingsBtn.addEventListener("click", async () => {
   navigateToPage(PAGES.EXPLANATIONS);
 });
 
-// Helper function to update word count display
-function updateWordCount(textarea, wordCountElement) {
+// Debounce timers for explanation nudges
+let selectedExplanationTimer = null;
+let nonSelectedExplanationTimer = null;
+
+// Helper function to update word count display with debounced nudge
+function updateWordCount(textarea, wordCountElement, showNudgeImmediately = false) {
   if (!textarea || !wordCountElement) return;
   const count = countWords(textarea.value);
   const isValid = count >= 5;
 
-  if (isValid) {
-    // Don't show anything when valid
-    wordCountElement.textContent = '';
-    wordCountElement.style.color = '';
-  } else if (count > 0) {
-    // Only show warning message, no word count
-    wordCountElement.textContent = 'Please write more substantively';
-    wordCountElement.style.color = 'var(--error)';
-  } else {
-    // Show warning for empty field
-    wordCountElement.textContent = 'Please write more substantively';
-    wordCountElement.style.color = 'var(--error)';
-  }
-
-  // Update continue button state
+  // Always update continue button state immediately
   updateExplanationsContinueButton();
+
+  if (showNudgeImmediately) {
+    // Show nudge immediately (used for debounced calls)
+    if (isValid || count === 0) {
+      // Don't show anything when valid or empty
+      wordCountElement.textContent = '';
+    } else {
+      // Show gentle nudge in muted gray color
+      wordCountElement.textContent = 'Please write more substantively';
+      wordCountElement.style.color = 'var(--muted)';
+    }
+  } else {
+    // Don't show nudge immediately - let debounce handle it
+    // But clear the nudge if they've reached valid word count
+    if (isValid) {
+      wordCountElement.textContent = '';
+    }
+  }
 }
 
 // Helper function to validate both explanations
@@ -1934,8 +1942,20 @@ function updateExplanationsContinueButton() {
 // Add event listeners for explanations textareas
 if (selectedExplanation && selectedWordCount) {
   selectedExplanation.addEventListener('input', () => {
-    updateWordCount(selectedExplanation, selectedWordCount);
+    // Clear any existing timer
+    if (selectedExplanationTimer) {
+      clearTimeout(selectedExplanationTimer);
+    }
+
+    // Update button state and clear nudge if valid
+    updateWordCount(selectedExplanation, selectedWordCount, false);
+
+    // Set a new timer to show nudge after 2 seconds of inactivity
+    selectedExplanationTimer = setTimeout(() => {
+      updateWordCount(selectedExplanation, selectedWordCount, true);
+    }, 2000);
   });
+
   // Disable paste to ensure participants type their responses
   selectedExplanation.addEventListener('paste', (e) => {
     e.preventDefault();
@@ -1944,8 +1964,20 @@ if (selectedExplanation && selectedWordCount) {
 
 if (nonSelectedExplanation && nonSelectedWordCount) {
   nonSelectedExplanation.addEventListener('input', () => {
-    updateWordCount(nonSelectedExplanation, nonSelectedWordCount);
+    // Clear any existing timer
+    if (nonSelectedExplanationTimer) {
+      clearTimeout(nonSelectedExplanationTimer);
+    }
+
+    // Update button state and clear nudge if valid
+    updateWordCount(nonSelectedExplanation, nonSelectedWordCount, false);
+
+    // Set a new timer to show nudge after 2 seconds of inactivity
+    nonSelectedExplanationTimer = setTimeout(() => {
+      updateWordCount(nonSelectedExplanation, nonSelectedWordCount, true);
+    }, 2000);
   });
+
   // Disable paste to ensure participants type their responses
   nonSelectedExplanation.addEventListener('paste', (e) => {
     e.preventDefault();
