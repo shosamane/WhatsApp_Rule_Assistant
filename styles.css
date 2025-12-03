@@ -376,6 +376,15 @@ input:focus {
   word-break: break-word;
 }
 
+/* Hide rationale and remove space when hidden */
+.rule-reason[hidden] {
+  display: none;
+}
+
+.rule-content:has(.rule-reason[hidden]) {
+  gap: 0;
+}
+
 .rule-actions {
   display: flex;
   flex-direction: column;

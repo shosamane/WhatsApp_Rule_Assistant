@@ -1,3 +1,12 @@
+// ============================================
+// EXPERIMENT CONFIGURATION
+// ============================================
+// Toggle this flag to show/hide AI-generated rationales in the UI
+// true = show rationales (reasons why rules are suggested)
+// false = hide rationales (only show rule text)
+const SHOW_RATIONALE = true;
+// ============================================
+
 const dropZone = document.getElementById("drop-zone");
 const fileInput = document.getElementById("chat-folder");
 const zipInput = document.getElementById("chat-zip");
@@ -1405,7 +1414,7 @@ function createRuleCard(rule, options) {
 
   textEl.textContent = rule.text;
   if (reasonEl) {
-    if (rule.reason) {
+    if (rule.reason && SHOW_RATIONALE) {
       reasonEl.textContent = rule.reason;
       reasonEl.hidden = false;
     } else {
@@ -1884,9 +1893,25 @@ submitRankingsBtn.addEventListener("click", async () => {
 
   // Populate the explanations panel
   if (selectedRuleText) selectedRuleText.textContent = selectedRuleForExplanation.text;
-  if (selectedRuleReason) selectedRuleReason.textContent = selectedRuleForExplanation.reason || '';
+  if (selectedRuleReason) {
+    if (SHOW_RATIONALE && selectedRuleForExplanation.reason) {
+      selectedRuleReason.textContent = selectedRuleForExplanation.reason;
+      selectedRuleReason.hidden = false;
+    } else {
+      selectedRuleReason.textContent = '';
+      selectedRuleReason.hidden = true;
+    }
+  }
   if (nonSelectedRuleText) nonSelectedRuleText.textContent = nonSelectedRuleForExplanation.text;
-  if (nonSelectedRuleReason) nonSelectedRuleReason.textContent = nonSelectedRuleForExplanation.reason || '';
+  if (nonSelectedRuleReason) {
+    if (SHOW_RATIONALE && nonSelectedRuleForExplanation.reason) {
+      nonSelectedRuleReason.textContent = nonSelectedRuleForExplanation.reason;
+      nonSelectedRuleReason.hidden = false;
+    } else {
+      nonSelectedRuleReason.textContent = '';
+      nonSelectedRuleReason.hidden = true;
+    }
+  }
 
   // Clear previous explanations
   if (selectedExplanation) selectedExplanation.value = '';
@@ -2269,6 +2294,9 @@ function buildSubmissionPayload({ selectedRules, genericSelections, contextualSe
     sourceId,
     completionCode,
     timestamps,
+    experimentCondition: {
+      showRationale: SHOW_RATIONALE,
+    },
     consent: {
       given: consentGiven,
       declined: consentDeclined,
@@ -2400,6 +2428,9 @@ async function saveProgress(pageName) {
       timestamps,
       pageHistory, // Include full navigation history
       sourceId,
+      experimentCondition: {
+        showRationale: SHOW_RATIONALE,
+      },
       consent: (consentGiven || consentDeclined) ? {
         given: consentGiven,
         declined: consentDeclined,
