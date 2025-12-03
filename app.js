@@ -1786,17 +1786,20 @@ generateBtn.addEventListener("click", async () => {
     const mergedRaw = await callGemini({ prompt: mergePrompt, model: GEMINI_FLASH_MODEL });
     const merged = parseMergedRules(mergedRaw, idToSource);
 
-    // remember for submission storage
+    // Shuffle merged rules for display
+    const shuffledMerged = shuffle(merged);
+
+    // remember for submission storage (save shuffled order for analysis)
     lastGenerated = {
       generic: genericRules,
       contextual: contextualRules,
       metadata: metadataRules,
-      merged,
+      merged: shuffledMerged, // Store shuffled order to analyze if users pick top rules
       stats,
       groupType,
     };
 
-    allRules = shuffle(merged);
+    allRules = shuffledMerged;
     availableRules = [...allRules];
     rankedRules = [];
     renderRulesWithCheckboxes();
