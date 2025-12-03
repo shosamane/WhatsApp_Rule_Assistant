@@ -1068,7 +1068,7 @@ function renderRulesWithCheckboxes() {
     reason.textContent = rule.reason || '';
 
     label.appendChild(text);
-    if (rule.reason) {
+    if (rule.reason && SHOW_RATIONALE) {
       label.appendChild(reason);
     }
 
