@@ -77,10 +77,50 @@ app.post(`${base}/api/generate`, async (req, res) => {
   }
 });
 
+// ---- validate URL identifier ----
+app.post(`${base}/api/validate-url-identifier`, async (req, res) => {
+  try {
+    const { urlIdentifier } = req.body || {};
+
+    if (!urlIdentifier) {
+      return res.json({ valid: true }); // No identifier means direct access, which is valid
+    }
+
+    const client = await getMongo();
+    const db = client.db(mongoDbName);
+    const coll = db.collection('completion_codes');
+
+    // Check if this URL identifier exists and hasn't been used
+    const code = await coll.findOne({
+      urlIdentifier: parseInt(urlIdentifier, 10),
+      sharedWithPlatform: true,
+      sharedWithParticipant: { $ne: true }
+    });
+
+    if (code) {
+      return res.json({ valid: true });
+    } else {
+      // Check if it exists but was already used
+      const usedCode = await coll.findOne({
+        urlIdentifier: parseInt(urlIdentifier, 10)
+      });
+
+      if (usedCode && usedCode.sharedWithParticipant === true) {
+        return res.json({ valid: false, reason: 'already_used' });
+      } else {
+        return res.json({ valid: false, reason: 'invalid' });
+      }
+    }
+  } catch (err) {
+    console.error('validate-url-identifier error', err);
+    return res.status(500).json({ error: 'validation_failed' });
+  }
+});
+
 // ---- get completion code ----
 app.post(`${base}/api/get-code`, async (req, res) => {
   try {
-    const { platform, userId } = req.body || {};
+    const { platform, userId, urlIdentifier } = req.body || {};
 
     // Validate platform
     const validPlatforms = ['clickworker', 'prolific', 'referral'];
@@ -97,13 +137,24 @@ app.post(`${base}/api/get-code`, async (req, res) => {
     const db = client.db(mongoDbName);
     const coll = db.collection('completion_codes');
 
+    // Build query based on whether URL identifier is provided
+    const query = {
+      platform: platform,
+      sharedWithPlatform: true,
+      sharedWithParticipant: { $ne: true }
+    };
+
+    // If URL identifier is provided (Clickworker unique URLs), find specific code
+    if (urlIdentifier !== undefined && urlIdentifier !== null) {
+      query.urlIdentifier = parseInt(urlIdentifier, 10);
+      console.log('[get-code] Looking for specific code with urlIdentifier:', urlIdentifier);
+    } else {
+      console.log('[get-code] Looking for any available code (no urlIdentifier)');
+    }
+
     // Atomically find and update one available code for the specified platform
     const result = await coll.findOneAndUpdate(
-      {
-        platform: platform,
-        sharedWithPlatform: true,
-        sharedWithParticipant: { $ne: true }
-      },
+      query,
       {
         $set: {
           sharedWithParticipant: true,
@@ -121,6 +172,9 @@ app.post(`${base}/api/get-code`, async (req, res) => {
 
     if (!document || !document.code) {
       console.error('[get-code] No document found. Result structure:', result);
+      if (urlIdentifier !== undefined && urlIdentifier !== null) {
+        return res.status(404).json({ error: 'invalid_url_identifier', hint: 'The URL identifier is invalid or has already been used' });
+      }
       return res.status(404).json({ error: 'no_codes_available' });
     }
 

@@ -18,13 +18,14 @@ COLLECTION_NAME = "completion_codes"  # Separate from submissions collection
 # Webapp URL for CSV export
 WEBAPP_URL = "go.rutgers.edu/whatsapprules"
 
-def allocate_codes(n, platform):
+def allocate_codes(n, platform, unique_urls=False):
     """
     Allocate n codes to a platform and export to CSV
 
     Args:
         n: Number of codes to allocate
         platform: Platform name (e.g., 'clickworker', 'prolific')
+        unique_urls: If True, generate unique URL identifiers for each code
     """
     # Connect to MongoDB
     client = MongoClient(MONGO_URI)
@@ -48,36 +49,72 @@ def allocate_codes(n, platform):
     code_ids = [doc["_id"] for doc in unallocated_codes]
     codes = [doc["code"] for doc in unallocated_codes]
 
-    result = collection.update_many(
-        {"_id": {"$in": code_ids}},
-        {
-            "$set": {
-                "sharedWithPlatform": True,
-                "platform": platform,
-                "allocatedAt": datetime.utcnow()
-            }
-        }
-    )
+    # Generate unique URL identifiers if requested
+    url_identifiers = []
+    if unique_urls:
+        # Generate random 8-digit identifiers (10000000 to 99999999)
+        # Check for uniqueness to avoid collisions
+        import random
+        used_identifiers = set(
+            doc["urlIdentifier"]
+            for doc in collection.find({"urlIdentifier": {"$exists": True}}, {"urlIdentifier": 1})
+        )
 
-    print(f"\n✓ Allocated {result.modified_count} codes to {platform}")
+        url_identifiers = []
+        while len(url_identifiers) < len(code_ids):
+            random_id = random.randint(10000000, 99999999)
+            if random_id not in used_identifiers and random_id not in url_identifiers:
+                url_identifiers.append(random_id)
+                used_identifiers.add(random_id)
+
+    # Update codes in database
+    for i, code_id in enumerate(code_ids):
+        update_doc = {
+            "sharedWithPlatform": True,
+            "platform": platform,
+            "allocatedAt": datetime.utcnow()
+        }
+        if unique_urls:
+            update_doc["urlIdentifier"] = url_identifiers[i]
+
+        collection.update_one(
+            {"_id": code_id},
+            {"$set": update_doc}
+        )
+
+    print(f"\n✓ Allocated {len(code_ids)} codes to {platform}")
+    if unique_urls:
+        print(f"✓ Generated URL identifiers from {url_identifiers[0]} to {url_identifiers[-1]}")
 
     # Generate CSV filename with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    csv_filename = f"codes_{platform}_{n}_{timestamp}.csv"
+    mode_suffix = "_unique_urls" if unique_urls else ""
+    csv_filename = f"codes_{platform}_{n}_{timestamp}{mode_suffix}.csv"
 
     # Write to CSV
     with open(csv_filename, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         # Write header
-        writer.writerow(['URL', 'Code'])
+        if unique_urls:
+            writer.writerow(['URL', 'URL_Identifier', 'Code'])
+        else:
+            writer.writerow(['URL', 'Code'])
+
         # Write data
-        for code in codes:
-            writer.writerow([WEBAPP_URL, code])
+        for i, code in enumerate(codes):
+            if unique_urls:
+                url_with_id = f"{WEBAPP_URL}?code={url_identifiers[i]}"
+                writer.writerow([url_with_id, url_identifiers[i], code])
+            else:
+                writer.writerow([WEBAPP_URL, code])
 
     print(f"✓ Exported to: {csv_filename}")
     print(f"\nCodes allocated:")
     for i, code in enumerate(codes[:10], 1):  # Show first 10
-        print(f"  {i}. {code}")
+        if unique_urls:
+            print(f"  {i}. ID={url_identifiers[i-1]}, Code={code}")
+        else:
+            print(f"  {i}. {code}")
     if len(codes) > 10:
         print(f"  ... and {len(codes) - 10} more")
 
@@ -142,14 +179,20 @@ def main():
         action='store_true',
         help='Show statistics only (no allocation)'
     )
+    parser.add_argument(
+        '--unique-urls',
+        action='store_true',
+        help='Generate unique URL identifiers for each code (for Clickworker)'
+    )
 
     args = parser.parse_args()
 
     if args.stats:
         show_statistics()
     else:
-        print(f"Allocating {args.n} codes to {args.platform}...")
-        allocate_codes(args.n, args.platform)
+        mode = "with unique URLs" if args.unique_urls else "standard mode"
+        print(f"Allocating {args.n} codes to {args.platform} ({mode})...")
+        allocate_codes(args.n, args.platform, unique_urls=args.unique_urls)
         show_statistics()
 
 if __name__ == "__main__":

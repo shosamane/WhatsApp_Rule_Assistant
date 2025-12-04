@@ -112,6 +112,62 @@ let wasDragging = false;
 // Recruitment source tracking
 let recruitmentSource = null;
 let participantId = null;
+let urlIdentifier = null; // For Clickworker unique URLs (extracted from ?code=XXX)
+
+// Extract URL identifier from query string if present (for Clickworker unique URLs)
+(() => {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeParam = urlParams.get('code');
+    if (codeParam) {
+      urlIdentifier = codeParam;
+      console.log('[Init] URL identifier found:', urlIdentifier);
+    }
+  } catch (e) {
+    console.error('[Init] Error parsing URL parameters:', e);
+  }
+})();
+
+// Validate URL identifier on page load
+async function validateUrlIdentifier() {
+  if (urlIdentifier === null) {
+    return true; // Direct access is valid
+  }
+
+  try {
+    const resp = await fetch('/webhook3/api/validate-url-identifier', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ urlIdentifier })
+    });
+
+    const data = await resp.json();
+
+    if (!data.valid) {
+      // Hide all content and show error
+      document.body.innerHTML = `
+        <div style="max-width: 600px; margin: 4rem auto; padding: 2rem; text-align: center; font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;">
+          <h1 style="color: #c62828; margin-bottom: 1rem;">Invalid Access Link</h1>
+          <p style="font-size: 1.1rem; line-height: 1.6; color: #333;">
+            ${data.reason === 'already_used'
+              ? 'This link has already been used and is no longer valid.'
+              : 'The link you used is invalid or does not exist.'}
+          </p>
+          <p style="font-size: 1rem; line-height: 1.6; color: #666; margin-top: 1.5rem;">
+            Please contact the study administrator for assistance.
+          </p>
+        </div>
+      `;
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('[Init] Validation error:', err);
+    // Allow access on validation error to avoid blocking legitimate users
+    return true;
+  }
+}
+
 let consentGiven = false;
 let consentDeclined = false;
 let consentTimestamp = null;
@@ -2301,6 +2357,7 @@ function buildSubmissionPayload({ selectedRules, genericSelections, contextualSe
     recruitment: {
       source: recruitmentSource,
       participantId: participantId,
+      urlIdentifier: urlIdentifier, // For Clickworker unique URLs
     },
     demographics: {
       age: demoAgeFinal?.value || '',
@@ -2372,12 +2429,20 @@ function getOrCreateSessionId() {
 // Generate a unique completion code from pre-allocated pool
 async function generateCompletionCode(platform, userId) {
   try {
+    const requestBody = { platform, userId };
+
+    // Include URL identifier if present (for Clickworker unique URLs)
+    if (urlIdentifier !== null && urlIdentifier !== undefined) {
+      requestBody.urlIdentifier = urlIdentifier;
+      console.log('[generateCompletionCode] Requesting specific code for urlIdentifier:', urlIdentifier);
+    }
+
     console.log('[generateCompletionCode] Requesting code for platform:', platform, 'userId:', userId);
 
     const resp = await fetch('/webhook3/api/get-code', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ platform, userId })
+      body: JSON.stringify(requestBody)
     });
 
     console.log('[generateCompletionCode] Response status:', resp.status);
@@ -2435,6 +2500,7 @@ async function saveProgress(pageName) {
       recruitment: (recruitmentSource && participantId) ? {
         source: recruitmentSource,
         participantId: participantId,
+        urlIdentifier: urlIdentifier, // For Clickworker unique URLs
       } : null,
       demographics: consentApproved ? {
         age: demoAge?.value || '',
@@ -2599,10 +2665,20 @@ if (consentDeclineBtn) {
   console.error('[Consent] Decline button not found!');
 }
 
-// Initialize page state - ensure only landing panel is visible
-(function() {
+// Initialize page state - validate URL and show landing panel
+(async function() {
   const mainHeader = document.getElementById('main-header');
   if (mainHeader) mainHeader.hidden = true;
+
+  // Validate URL identifier before showing content
+  const isValid = await validateUrlIdentifier();
+  if (!isValid) {
+    // Validation failed - error page already shown, stop initialization
+    return;
+  }
+
+  // URL is valid or no identifier - show landing page normally
+  navigateToPage(PAGES.LANDING, false);
 })();
 
 if (approveBtn) {
