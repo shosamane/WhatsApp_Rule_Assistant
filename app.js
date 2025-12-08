@@ -2303,17 +2303,40 @@ if (submitFinalBtn) {
       const response = await storeSubmission(payload);
       console.log('[Submit] Server response:', response);
 
-      // Show success message with completion code
+      // Show success message - different for each platform
       const msgDiv = document.getElementById('final-submission-message');
       if (msgDiv) {
-        msgDiv.innerHTML = `
-          <p><strong>Thank you!</strong></p>
-          <p style="margin: 1rem 0; font-size: 1.1rem;">
-            <strong>Your completion code is: <span style="font-size: 1.3rem; color: var(--accent); font-weight: 700;">${completionCode}</span></strong>
-          </p>
-          <p style="margin: 0.5rem 0;">Please copy this code and paste it on Clickworker/Prolific to receive your payment.</p>
-          <p>Your responses have been submitted successfully. You may now close this page.</p>
-        `;
+        if (recruitmentSource === 'prolific') {
+          // Prolific participants: show redirect link
+          msgDiv.innerHTML = `
+            <p><strong>Thank you!</strong></p>
+            <p style="margin: 1rem 0;">Your responses have been submitted successfully.</p>
+            <p style="margin: 1rem 0; font-size: 1.1rem;">
+              <strong>Please click the link below to return to Prolific and complete your submission:</strong>
+            </p>
+            <p style="margin: 1rem 0;">
+              <a href="https://app.prolific.com/submissions/complete?cc=CCJ1SIAW"
+                 target="_blank"
+                 style="display: inline-block; background: var(--accent); color: white; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 1.1rem;">
+                Complete Prolific Submission
+              </a>
+            </p>
+            <p style="margin: 1rem 0; color: var(--muted); font-size: 0.95rem;">
+              You must click this link to receive your payment.
+            </p>
+          `;
+        } else {
+          // Clickworker and Referral participants: show completion code
+          msgDiv.innerHTML = `
+            <p><strong>Thank you!</strong></p>
+            <p style="margin: 1rem 0; font-size: 1.1rem;">
+              <strong>Your completion code is: <span style="font-size: 1.3rem; color: var(--accent); font-weight: 700;">${completionCode}</span></strong>
+            </p>
+            <p style="margin: 0.5rem 0;">Please copy this code and paste it on ${recruitmentSource === 'clickworker' ? 'Clickworker' : 'the platform you were recruited from'} to receive your payment.</p>
+            <p style="margin: 0.5rem 0;">If you were referred by the researchers, please email this code back to the researcher at <a href="mailto:sh1779@scarletmail.rutgers.edu" style="color: var(--accent);">sh1779@scarletmail.rutgers.edu</a> indicating your completion to process the payment of your reward.</p>
+            <p>Your responses have been submitted successfully. You may now close this page.</p>
+          `;
+        }
         msgDiv.hidden = false;
       }
 
@@ -2428,6 +2451,12 @@ function getOrCreateSessionId() {
 
 // Generate a unique completion code from pre-allocated pool
 async function generateCompletionCode(platform, userId) {
+  // Prolific participants don't need a completion code - they use the redirect link
+  if (platform === 'prolific') {
+    console.log('[generateCompletionCode] Skipping code retrieval for Prolific participant');
+    return null;
+  }
+
   try {
     const requestBody = { platform, userId };
 
