@@ -2315,7 +2315,7 @@ if (submitFinalBtn) {
               <strong>Please click the link below to return to Prolific and complete your submission:</strong>
             </p>
             <p style="margin: 1rem 0;">
-              <a href="https://app.prolific.com/submissions/complete?cc=CI5OKDPN"
+              <a href="https://app.prolific.com/submissions/complete?cc=CCJ1SIAW"
                  target="_blank"
                  style="display: inline-block; background: var(--accent); color: white; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 1.1rem;">
                 Complete Prolific Submission
