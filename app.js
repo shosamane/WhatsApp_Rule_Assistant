@@ -1006,8 +1006,27 @@ async function loadChatFile(chat, displayLabel) {
     const elig = checkTranscriptEligibility(parsedMessages);
     meetsActivityCriteria = elig.ok;
     deviceType = inferDeviceType(contents);
+
+    // Extract group name from filename
+    let groupName = displayLabel || '';
+    // Remove common WhatsApp export prefixes and file extensions
+    groupName = groupName
+      .replace(/^WhatsApp Chat with /i, '')
+      .replace(/\.txt$/i, '')
+      .replace(/\.zip$/i, '')
+      .trim();
+    // If it has a zip path like "archive.zip > chat.txt", take the last part
+    if (groupName.includes(' > ')) {
+      const parts = groupName.split(' > ');
+      groupName = parts[parts.length - 1]
+        .replace(/\.txt$/i, '')
+        .replace(/^WhatsApp Chat with /i, '')
+        .trim();
+    }
+
     transcriptMeta = {
       deviceType,
+      groupName,
       totalMessages: elig.totalMessages,
       uniqueParticipants: elig.uniqueParticipants,
       earliestIso: elig.earliestIso,
