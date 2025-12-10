@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rule Dropping Logic Tester</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #f5f5f5;
+      padding: 2rem;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      color: #1a73e8;
+      margin-bottom: 1rem;
+      font-size: 1.8rem;
+    }
+
+    h2 {
+      color: #333;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      font-size: 1.3rem;
+      border-bottom: 2px solid #e0e0e0;
+      padding-bottom: 0.5rem;
+    }
+
+    .section {
+      margin-bottom: 2rem;
+    }
+
+    .rules-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .category-box {
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    .category-box.generic { border-color: #4285f4; }
+    .category-box.contextual { border-color: #ea4335; }
+    .category-box.metadata { border-color: #34a853; }
+
+    .category-title {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+    }
+
+    .generic .category-title { color: #4285f4; }
+    .contextual .category-title { color: #ea4335; }
+    .metadata .category-title { color: #34a853; }
+
+    .rule-checkbox {
+      display: flex;
+      align-items: center;
+      padding: 0.3rem 0;
+      cursor: pointer;
+    }
+
+    .rule-checkbox input {
+      margin-right: 0.5rem;
+      cursor: pointer;
+    }
+
+    .rule-checkbox.merged {
+      background: #fff3cd;
+      padding: 0.3rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    button {
+      background: #1a73e8;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    button:hover {
+      background: #1557b0;
+    }
+
+    button.secondary {
+      background: #5f6368;
+    }
+
+    button.secondary:hover {
+      background: #3c4043;
+    }
+
+    button.danger {
+      background: #ea4335;
+    }
+
+    button.danger:hover {
+      background: #c5221f;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .merged-rules-list {
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 1rem;
+      min-height: 60px;
+    }
+
+    .merged-rule-item {
+      background: white;
+      border: 2px solid #34a853;
+      border-radius: 6px;
+      padding: 0.5rem 1rem;
+      margin-bottom: 0.5rem;
+      display: inline-block;
+      margin-right: 0.5rem;
+      font-weight: 600;
+    }
+
+    .merged-rule-item button {
+      background: none;
+      color: #ea4335;
+      border: none;
+      padding: 0;
+      margin-left: 0.5rem;
+      cursor: pointer;
+      font-size: 1.1rem;
+    }
+
+    .state-display {
+      background: #e8f0fe;
+      border-left: 4px solid #1a73e8;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+    }
+
+    .counts {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .counts span {
+      margin-right: 1.5rem;
+    }
+
+    .iteration-log {
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .iteration {
+      border-left: 4px solid #fbbc04;
+      background: white;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 4px;
+    }
+
+    .iteration-header {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 0.5rem;
+    }
+
+    .iteration-detail {
+      margin: 0.5rem 0;
+      padding: 0.5rem;
+      background: #f8f9fa;
+      border-radius: 4px;
+    }
+
+    .iteration-detail strong {
+      color: #1a73e8;
+    }
+
+    .dropped-rule {
+      background: #fce8e6;
+      color: #c5221f;
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      font-weight: 600;
+      display: inline-block;
+    }
+
+    .valid-candidates {
+      color: #34a853;
+      font-family: monospace;
+    }
+
+    .final-result {
+      background: #e6f4ea;
+      border-left: 4px solid #34a853;
+      padding: 1rem;
+      border-radius: 4px;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .error {
+      background: #fce8e6;
+      border-left: 4px solid #ea4335;
+      padding: 1rem;
+      border-radius: 4px;
+      color: #c5221f;
+    }
+
+    .seed-input {
+      margin-bottom: 1rem;
+    }
+
+    .seed-input input {
+      padding: 0.5rem;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      font-size: 1rem;
+      width: 200px;
+      margin-left: 0.5rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #5f6368;
+      padding: 2rem;
+      font-style: italic;
+    }
+
+    code {
+      background: #f1f3f4;
+      padding: 0.2rem 0.4rem;
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Rule Dropping Logic Tester</h1>
+    <p style="color: #5f6368; margin-bottom: 2rem;">
+      Test the look-ahead dropping algorithm with custom merged rules. Maximum 3 iterations, equal probability for valid candidates.
+    </p>
+
+    <!-- Initial Rules -->
+    <div class="section">
+      <h2>1. Select Rules to Merge</h2>
+      <p style="color: #5f6368; margin-bottom: 1rem;">
+        Select 2 or 3 rules from different categories and click "Merge Selected". You can create multiple merged rules.
+      </p>
+
+      <div class="rules-grid">
+        <div class="category-box generic">
+          <div class="category-title">Generic (G)</div>
+          <div id="generic-rules"></div>
+        </div>
+        <div class="category-box contextual">
+          <div class="category-title">Contextual (C)</div>
+          <div id="contextual-rules"></div>
+        </div>
+        <div class="category-box metadata">
+          <div class="category-title">Metadata (M)</div>
+          <div id="metadata-rules"></div>
+        </div>
+      </div>
+
+      <button onclick="mergeSelected()">Merge Selected Rules</button>
+      <button class="danger" onclick="clearAllMerges()">Clear All Merges</button>
+    </div>
+
+    <!-- Merged Rules Display -->
+    <div class="section">
+      <h2>2. Current Merged Rules</h2>
+      <div id="merged-rules-display" class="merged-rules-list">
+        <div class="empty-state">No merged rules yet</div>
+      </div>
+    </div>
+
+    <!-- Current State -->
+    <div class="section">
+      <h2>3. Current State</h2>
+      <div class="state-display">
+        <div id="current-state">
+          <div class="counts">
+            <span>Total Rules: <code id="total-rules">15</code></span>
+            <span>Generic: <code id="count-generic">5</code></span>
+            <span>Contextual: <code id="count-contextual">5</code></span>
+            <span>Metadata: <code id="count-metadata">5</code></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Run Algorithm -->
+    <div class="section">
+      <h2>4. Run Dropping Algorithm</h2>
+      <div class="seed-input">
+        <label>
+          <strong>Random Seed:</strong>
+          <input type="text" id="seed-input" value="test-session-123" placeholder="Enter seed for reproducibility">
+        </label>
+      </div>
+      <button onclick="runAlgorithm()">▶ Run Algorithm</button>
+      <button class="secondary" onclick="clearOutput()">Clear Output</button>
+    </div>
+
+    <!-- Algorithm Output -->
+    <div class="section">
+      <h2>5. Algorithm Output</h2>
+      <div id="algorithm-output" class="iteration-log">
+        <div class="empty-state">Run the algorithm to see output</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let rules = [];
+    let mergedRules = [];
+    let nextMergeId = 1;
+
+    // Initialize
+    function init() {
+      // Create initial 15 rules (5 generic, 5 contextual, 5 metadata)
+      rules = [
+        { id: 'G1', sources: ['generic'], merged: false },
+        { id: 'G2', sources: ['generic'], merged: false },
+        { id: 'G3', sources: ['generic'], merged: false },
+        { id: 'G4', sources: ['generic'], merged: false },
+        { id: 'G5', sources: ['generic'], merged: false },
+        { id: 'C1', sources: ['contextual'], merged: false },
+        { id: 'C2', sources: ['contextual'], merged: false },
+        { id: 'C3', sources: ['contextual'], merged: false },
+        { id: 'C4', sources: ['contextual'], merged: false },
+        { id: 'C5', sources: ['contextual'], merged: false },
+        { id: 'M1', sources: ['metadata'], merged: false },
+        { id: 'M2', sources: ['metadata'], merged: false },
+        { id: 'M3', sources: ['metadata'], merged: false },
+        { id: 'M4', sources: ['metadata'], merged: false },
+        { id: 'M5', sources: ['metadata'], merged: false },
+      ];
+
+      renderRules();
+      updateState();
+    }
+
+    function renderRules() {
+      const genericDiv = document.getElementById('generic-rules');
+      const contextualDiv = document.getElementById('contextual-rules');
+      const metadataDiv = document.getElementById('metadata-rules');
+
+      genericDiv.innerHTML = '';
+      contextualDiv.innerHTML = '';
+      metadataDiv.innerHTML = '';
+
+      rules.forEach(rule => {
+        const div = document.createElement('label');
+        div.className = 'rule-checkbox' + (rule.merged ? ' merged' : '');
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `checkbox-${rule.id}`;
+        checkbox.disabled = rule.merged;
+
+        div.appendChild(checkbox);
+        div.appendChild(document.createTextNode(rule.id + (rule.merged ? ' (merged)' : '')));
+
+        if (rule.sources[0] === 'generic') {
+          genericDiv.appendChild(div);
+        } else if (rule.sources[0] === 'contextual') {
+          contextualDiv.appendChild(div);
+        } else {
+          metadataDiv.appendChild(div);
+        }
+      });
+    }
+
+    function mergeSelected() {
+      const selected = rules.filter(rule => {
+        const checkbox = document.getElementById(`checkbox-${rule.id}`);
+        return checkbox && checkbox.checked && !rule.merged;
+      });
+
+      if (selected.length < 2 || selected.length > 3) {
+        alert('Please select 2 or 3 rules to merge');
+        return;
+      }
+
+      // Check they're from different categories
+      const categories = [...new Set(selected.flatMap(r => r.sources))];
+      if (categories.length !== selected.length) {
+        alert('Selected rules must be from different categories (no same-category merging)');
+        return;
+      }
+
+      // Create merged rule
+      const mergedId = `[${selected.map(r => r.id).join('+')}]`;
+      const mergedSources = [...new Set(selected.flatMap(r => r.sources))];
+
+      // Remove original rules and add merged rule
+      rules = rules.filter(r => !selected.includes(r));
+      rules.push({
+        id: mergedId,
+        sources: mergedSources,
+        merged: true,
+        originalIds: selected.map(r => r.id)
+      });
+
+      mergedRules.push({
+        id: mergedId,
+        sources: mergedSources,
+        originalIds: selected.map(r => r.id)
+      });
+
+      renderRules();
+      renderMergedRules();
+      updateState();
+
+      // Uncheck all
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    }
+
+    function renderMergedRules() {
+      const display = document.getElementById('merged-rules-display');
+
+      if (mergedRules.length === 0) {
+        display.innerHTML = '<div class="empty-state">No merged rules yet</div>';
+        return;
+      }
+
+      display.innerHTML = mergedRules.map(mr => `
+        <div class="merged-rule-item">
+          ${mr.id}
+          <span style="color: #5f6368; font-weight: normal; font-size: 0.9em;">
+            [${mr.sources.join(', ')}]
+          </span>
+          <button onclick="unmerge('${mr.id}')">×</button>
+        </div>
+      `).join('');
+    }
+
+    function unmerge(mergedId) {
+      const merged = mergedRules.find(mr => mr.id === mergedId);
+      if (!merged) return;
+
+      // Remove merged rule
+      rules = rules.filter(r => r.id !== mergedId);
+
+      // Add back original rules
+      merged.originalIds.forEach((origId, idx) => {
+        rules.push({
+          id: origId,
+          sources: [merged.sources[idx] || merged.sources[0]],
+          merged: false
+        });
+      });
+
+      mergedRules = mergedRules.filter(mr => mr.id !== mergedId);
+
+      renderRules();
+      renderMergedRules();
+      updateState();
+    }
+
+    function clearAllMerges() {
+      // Reset to initial 15 rules
+      init();
+      mergedRules = [];
+      renderMergedRules();
+    }
+
+    function updateState() {
+      const counts = countByCategory(rules);
+      document.getElementById('total-rules').textContent = rules.length;
+      document.getElementById('count-generic').textContent = counts.generic;
+      document.getElementById('count-contextual').textContent = counts.contextual;
+      document.getElementById('count-metadata').textContent = counts.metadata;
+    }
+
+    function countByCategory(rulesList) {
+      const counts = { generic: 0, contextual: 0, metadata: 0 };
+      rulesList.forEach(rule => {
+        rule.sources.forEach(src => counts[src]++);
+      });
+      return counts;
+    }
+
+    function isBalanced(counts) {
+      const values = Object.values(counts);
+      return values.every(v => v === values[0]);
+    }
+
+    // Seeded RNG
+    function createSeededRNG(seed) {
+      let state = 0;
+      for (let i = 0; i < seed.length; i++) {
+        state = ((state << 5) - state) + seed.charCodeAt(i);
+        state = state & state;
+      }
+      state = Math.abs(state);
+
+      return function() {
+        state = (state * 1664525 + 1013904223) % 4294967296;
+        return state / 4294967296;
+      };
+    }
+
+    // Calculate minimum drops needed (greedy simulation)
+    function calculateMinDropsNeeded(rulesList, counts) {
+      let simRules = [...rulesList];
+      let simCounts = { ...counts };
+      let drops = 0;
+
+      while (!isBalanced(simCounts) && drops < 10) {
+        const minCount = Math.min(...Object.values(simCounts));
+        const overTarget = Object.keys(simCounts).filter(cat => simCounts[cat] > minCount);
+
+        if (overTarget.length === 0) break;
+
+        // Find best rule to drop (covers most over-target categories)
+        let bestRule = null;
+        let bestCoverage = 0;
+
+        for (const rule of simRules) {
+          const coverage = rule.sources.filter(src => overTarget.includes(src)).length;
+          if (coverage > bestCoverage) {
+            bestCoverage = coverage;
+            bestRule = rule;
+          }
+        }
+
+        if (!bestRule) break;
+
+        // Simulate drop
+        bestRule.sources.forEach(src => simCounts[src]--);
+        simRules = simRules.filter(r => r !== bestRule);
+        drops++;
+      }
+
+      return isBalanced(simCounts) ? drops : Infinity;
+    }
+
+    // Main algorithm
+    function runAlgorithm() {
+      const MAX_ITERATIONS = 3;
+      const seed = document.getElementById('seed-input').value || 'default-seed';
+      const rng = createSeededRNG(seed);
+
+      let currentRules = [...rules];
+      let counts = countByCategory(currentRules);
+      const droppedRules = [];
+      const log = [];
+
+      log.push({
+        type: 'initial',
+        counts: { ...counts },
+        totalRules: currentRules.length,
+        seed: seed
+      });
+
+      for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
+        // Check if done
+        if (isBalanced(counts) && currentRules.length <= 12) {
+          log.push({
+            type: 'complete',
+            iteration: iteration,
+            reason: 'Balanced and ≤12 rules'
+          });
+          break;
+        }
+
+        const remainingIterations = MAX_ITERATIONS - iteration - 1;
+
+        // Find valid candidates
+        const validCandidates = currentRules.filter(rule => {
+          const simCounts = { ...counts };
+          rule.sources.forEach(src => simCounts[src]--);
+          const simRules = currentRules.filter(r => r !== rule);
+          const minDrops = calculateMinDropsNeeded(simRules, simCounts);
+          return minDrops <= remainingIterations;
+        });
+
+        if (validCandidates.length === 0) {
+          log.push({
+            type: 'error',
+            iteration: iteration + 1,
+            reason: 'No valid candidates found',
+            counts: { ...counts }
+          });
+          break;
+        }
+
+        // Random selection
+        const randomIndex = Math.floor(rng() * validCandidates.length);
+        const ruleToDrop = validCandidates[randomIndex];
+
+        // Execute drop
+        ruleToDrop.sources.forEach(src => counts[src]--);
+        currentRules = currentRules.filter(r => r !== ruleToDrop);
+        droppedRules.push(ruleToDrop);
+
+        log.push({
+          type: 'iteration',
+          iteration: iteration + 1,
+          remainingIterations: remainingIterations,
+          totalCandidates: currentRules.length + 1,
+          validCandidates: validCandidates.map(r => r.id),
+          dropped: ruleToDrop.id,
+          droppedSources: ruleToDrop.sources,
+          countsAfter: { ...counts },
+          rulesRemaining: currentRules.length
+        });
+      }
+
+      log.push({
+        type: 'final',
+        totalDropped: droppedRules.length,
+        finalRules: currentRules.length,
+        finalCounts: { ...counts },
+        balanced: isBalanced(counts)
+      });
+
+      renderOutput(log);
+    }
+
+    function renderOutput(log) {
+      const output = document.getElementById('algorithm-output');
+      output.innerHTML = '';
+
+      log.forEach(entry => {
+        const div = document.createElement('div');
+
+        if (entry.type === 'initial') {
+          div.className = 'state-display';
+          div.innerHTML = `
+            <strong>Initial State</strong><br>
+            Seed: <code>${entry.seed}</code><br>
+            Total Rules: <code>${entry.totalRules}</code><br>
+            Counts: Generic=<code>${entry.counts.generic}</code>,
+                   Contextual=<code>${entry.counts.contextual}</code>,
+                   Metadata=<code>${entry.counts.metadata}</code>
+          `;
+        } else if (entry.type === 'iteration') {
+          div.className = 'iteration';
+          div.innerHTML = `
+            <div class="iteration-header">Iteration ${entry.iteration} of 3</div>
+            <div class="iteration-detail">
+              <strong>Remaining iterations after this:</strong> ${entry.remainingIterations}
+            </div>
+            <div class="iteration-detail">
+              <strong>Total candidates:</strong> ${entry.totalCandidates}<br>
+              <strong>Valid candidates (can finish in ${entry.remainingIterations} more drops):</strong>
+              <span class="valid-candidates">${entry.validCandidates.join(', ')}</span>
+              (${entry.validCandidates.length} rules)
+            </div>
+            <div class="iteration-detail">
+              <strong>Randomly selected:</strong>
+              <span class="dropped-rule">${entry.dropped}</span>
+              <span style="color: #5f6368;">[${entry.droppedSources.join(', ')}]</span>
+            </div>
+            <div class="iteration-detail">
+              <strong>Counts after drop:</strong>
+              Generic=<code>${entry.countsAfter.generic}</code>,
+              Contextual=<code>${entry.countsAfter.contextual}</code>,
+              Metadata=<code>${entry.countsAfter.metadata}</code><br>
+              <strong>Rules remaining:</strong> <code>${entry.rulesRemaining}</code>
+            </div>
+          `;
+        } else if (entry.type === 'complete') {
+          div.className = 'state-display';
+          div.style.background = '#e6f4ea';
+          div.style.borderColor = '#34a853';
+          div.innerHTML = `
+            <strong>✓ Stopped at iteration ${entry.iteration}</strong><br>
+            Reason: ${entry.reason}
+          `;
+        } else if (entry.type === 'error') {
+          div.className = 'error';
+          div.innerHTML = `
+            <strong>⚠ Error at iteration ${entry.iteration}</strong><br>
+            ${entry.reason}<br>
+            Counts: Generic=${entry.counts.generic},
+                   Contextual=${entry.counts.contextual},
+                   Metadata=${entry.counts.metadata}
+          `;
+        } else if (entry.type === 'final') {
+          div.className = 'final-result';
+          div.innerHTML = `
+            <strong>Final Result:</strong><br>
+            Total rules dropped: <code>${entry.totalDropped}</code><br>
+            Final rules remaining: <code>${entry.finalRules}</code><br>
+            Final counts: Generic=<code>${entry.finalCounts.generic}</code>,
+                         Contextual=<code>${entry.finalCounts.contextual}</code>,
+                         Metadata=<code>${entry.finalCounts.metadata}</code><br>
+            ${entry.balanced ? '✓ Balanced' : '✗ Not balanced'}
+            ${entry.finalRules <= 12 ? ', ✓ ≤12 rules' : ', ✗ >12 rules'}
+          `;
+        }
+
+        output.appendChild(div);
+      });
+    }
+
+    function clearOutput() {
+      document.getElementById('algorithm-output').innerHTML = '<div class="empty-state">Run the algorithm to see output</div>';
+    }
+
+    // Initialize on load
+    init();
+  </script>
+</body>
+</html>
