@@ -1420,6 +1420,139 @@ function shuffle(array) {
   return copy;
 }
 
+// ========== Rule Dropping Logic (Balance to ≤12 rules) ==========
+
+// Seeded RNG for reproducible randomization
+function createSeededRNG(seed) {
+  let state = 0;
+  for (let i = 0; i < seed.length; i++) {
+    state = ((state << 5) - state) + seed.charCodeAt(i);
+    state = state & state;
+  }
+  state = Math.abs(state);
+
+  return function() {
+    state = (state * 1664525 + 1013904223) % 4294967296;
+    return state / 4294967296;
+  };
+}
+
+// Count how many rules contribute to each category
+function countByCategory(rulesList) {
+  const counts = { generic: 0, contextual: 0, metadata: 0 };
+  rulesList.forEach(rule => {
+    const sources = rule.sources || [rule.source];
+    if (sources.includes('generic')) counts.generic++;
+    if (sources.includes('contextual')) counts.contextual++;
+    if (sources.includes('metadata')) counts.metadata++;
+  });
+  return counts;
+}
+
+// Check if counts are balanced (all equal)
+function isBalanced(counts) {
+  const values = Object.values(counts);
+  return values.every(v => v === values[0]);
+}
+
+// Calculate minimum drops needed using greedy simulation
+function calculateMinDropsNeeded(rulesList, counts) {
+  let simRules = [...rulesList];
+  let simCounts = { ...counts };
+  let drops = 0;
+
+  while (!isBalanced(simCounts) && drops < 10) {
+    const minCount = Math.min(...Object.values(simCounts));
+    const overTarget = Object.keys(simCounts).filter(cat => simCounts[cat] > minCount);
+
+    if (overTarget.length === 0) break;
+
+    // Find best rule to drop (covers most over-target categories)
+    let bestRule = null;
+    let bestCoverage = 0;
+
+    for (const rule of simRules) {
+      const sources = rule.sources || [rule.source];
+      const coverage = sources.filter(src => overTarget.includes(src)).length;
+      if (coverage > bestCoverage) {
+        bestCoverage = coverage;
+        bestRule = rule;
+      }
+    }
+
+    if (!bestRule) break;
+
+    // Simulate drop
+    bestRule.sources.forEach(src => simCounts[src]--);
+    simRules = simRules.filter(r => r !== bestRule);
+    drops++;
+  }
+
+  return isBalanced(simCounts) ? drops : Infinity;
+}
+
+// Main algorithm: Balance rules to ≤12 with max 3 iterations
+function balanceRulesToMaximum12(mergedRules, sessionId) {
+  const MAX_ITERATIONS = 3;
+  const MAX_RULES = 12;
+  const rng = createSeededRNG(sessionId);
+
+  let currentRules = [...mergedRules];
+  let counts = countByCategory(currentRules);
+  const droppedRules = [];
+
+  console.log('[Balance] Starting with', currentRules.length, 'rules, counts:', counts);
+
+  // Check if already balanced and ≤12
+  if (isBalanced(counts) && currentRules.length <= MAX_RULES) {
+    console.log('[Balance] Already balanced and ≤12, no drops needed');
+    return { rules: currentRules, dropped: [] };
+  }
+
+  for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
+    // Stop if balanced and ≤12
+    if (isBalanced(counts) && currentRules.length <= MAX_RULES) {
+      console.log('[Balance] Balanced and ≤12 at iteration', iteration);
+      break;
+    }
+
+    const remainingIterations = MAX_ITERATIONS - iteration - 1;
+
+    // Find valid candidates (can finish balancing within remaining iterations)
+    const validCandidates = currentRules.filter(rule => {
+      const simCounts = { ...counts };
+      const sources = rule.sources || [rule.source];
+      sources.forEach(src => simCounts[src]--);
+      const simRules = currentRules.filter(r => r !== rule);
+      const minDrops = calculateMinDropsNeeded(simRules, simCounts);
+      return minDrops <= remainingIterations;
+    });
+
+    if (validCandidates.length === 0) {
+      console.warn('[Balance] No valid candidates at iteration', iteration + 1);
+      break;
+    }
+
+    // Randomly select from valid candidates (equal probability)
+    const randomIndex = Math.floor(rng() * validCandidates.length);
+    const ruleToDrop = validCandidates[randomIndex];
+
+    console.log(`[Balance] Iteration ${iteration + 1}: Dropping rule`, ruleToDrop.text.substring(0, 50) + '...');
+
+    // Execute drop
+    const sources = ruleToDrop.sources || [ruleToDrop.source];
+    sources.forEach(src => counts[src]--);
+    currentRules = currentRules.filter(r => r !== ruleToDrop);
+    droppedRules.push(ruleToDrop);
+  }
+
+  console.log('[Balance] Final:', currentRules.length, 'rules, counts:', counts, 'dropped:', droppedRules.length);
+
+  return { rules: currentRules, dropped: droppedRules };
+}
+
+// ========== End Rule Dropping Logic ==========
+
 function clearRankingSummary() {
   rankingSummary.hidden = true;
   rankingSummary.innerHTML = "";
@@ -1876,17 +2009,25 @@ generateBtn.addEventListener("click", async () => {
     // Shuffle merged rules for display
     const shuffledMerged = shuffle(merged);
 
+    // Balance rules to ≤12 with max 3 iterations
+    const sessionId = getOrCreateSessionId();
+    const balanceResult = balanceRulesToMaximum12(shuffledMerged, sessionId);
+    const balancedRules = balanceResult.rules;
+    const droppedRules = balanceResult.dropped;
+
     // remember for submission storage (save shuffled order for analysis)
     lastGenerated = {
       generic: genericRules,
       contextual: contextualRules,
       metadata: metadataRules,
       merged: shuffledMerged, // Store shuffled order to analyze if users pick top rules
+      balanced: balancedRules, // Store balanced rules (after dropping)
+      dropped: droppedRules, // Store dropped rules
       stats,
       groupType,
     };
 
-    allRules = shuffledMerged;
+    allRules = balancedRules;
     availableRules = [...allRules];
     rankedRules = [];
     renderRulesWithCheckboxes();
@@ -2424,6 +2565,8 @@ function buildSubmissionPayload({ selectedRules, genericSelections, contextualSe
       contextual: lastGenerated?.contextual || [],
       metadata: lastGenerated?.metadata || [],
       merged: lastGenerated?.merged || [],
+      balanced: lastGenerated?.balanced || [],
+      dropped: lastGenerated?.dropped || [],
     },
     selection: {
       selected,
