@@ -389,11 +389,12 @@ const GENERIC_PROMPT_TEMPLATE = ({ groupType }) => `You are assisting with the g
 Task: Provide exactly five governance guidelines that would be suitable for a WhatsApp group categorised as "${groupType}". Each rule must be a single, self-contained statement (one short self-contained sentence) describing the expectation or restriction. For each rule, also provide a short "reason" sentence.
 
 Requirements:
-- Balance prescriptive guidance (what members should do) and restrictive guidance (what members must avoid).
+- Try to add a mix of prescriptive guidance (what members should do) and restrictive guidance (what members must avoid).
 - Focus on broadly applicable group norms that you think would be applicable for "${groupType}" type, from your own prior knowledge.
 - For each rule include a neutral, general "reason" that explains the benefit of the rule without implying knowledge of any specific or anedotal knowledge of any particular group, transcript, or participants.
 - Keep tone neutral and reasoning abstract (i.e., reasons should read like universal justifications, not case-specific commentary).
 - Keep each statement concise and actionable; avoid duplicates and numbering.
+- CRITICAL: Ensure all five rules are SUBSTANTIVELY DIFFERENT from each other. They should cover different aspects of group governance. Do NOT generate near-similar rules that could be easily merged. Verify each rule addresses a distinct concern.
 
 Return JSON only in this schema:
 {
@@ -440,14 +441,14 @@ Context summary:
 Below is a transcript excerpt containing the most recent ${messages.length} rows from the selected window. Each row is JSON with timestamp, sender, mediaType (text|image|video|audio|document|link|system), and content. Use it extensively to understand recurring topics, conflicts, and norms.
 ${messagesBlock}
 
-Task: Create exactly five different governance rules tailored to the observed behaviours. Express each rule as a single, self-contained statement (one short self-contained sentence) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
+Task: Create exactly five distinct governance rules tailored to the observed behaviours. Express each rule as a single, self-contained statement (one short self-contained sentence) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
 
 Requirements:
 - Each rule must be grounded in patterns surfaced by the transcript, but do not mention the transcript, chat logs, participants, or the analysis process. Do not write "this group" or otherwise reveal that these rules come from a specific dataset.
-- Mix prescriptive and restrictive guidance.
+- Mix of prescriptive and restrictive guidance.
 - Reference specific behaviours only when they appear in the excerpt, but phrase the accompanying "reason" in neutral, general and abstract justification rather than explicit references to the observed messages.
 - Keep the tone constructive and neutral; avoid naming individuals or exposing personal data.
-- Keep reasons comparable in tone and level of abstraction to the generic variant so that the two sets can be compared fairly.
+- Keep reasons generic enough in tone and level of abstraction. The rules themselves should still be grounded from observations in the transcript.
 - Avoid numbering, bullet symbols, or extra commentary.
 
 Return JSON only in this schema:
@@ -514,13 +515,13 @@ Context summary (no message content provided):
 Below is a transcript excerpt where each row is JSON with timestamp, sender, mediaType, and a content object that contains only metadata (word and character counts for text/link/system/deleted messages; and mediaType plus filename when available for media messages). No raw message text or URLs are included.
 ${messagesBlock}
 
-Task: Create exactly five governance rules based only on these metadata signals that you think are the most relevant or important. Express each rule as a single, self-contained statement (one short self-contained sentence) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
+Task: Create exactly five distinct governance rules based only on these metadata signals that you think are the most relevant or important. Express each rule as a single, self-contained statement (one short self-contained sentence) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
 
 Requirements:
 - Do not infer or reference any specific message content, quotes, or topics. Base rules solely on activity patterns and metadata.
-- Mix prescriptive and restrictive guidance.
+- Mix of prescriptive and restrictive guidance.
 - Keep the tone constructive and neutral; avoid naming individuals or exposing any personal data.
-- Reasons should be phrased in neutral general terms and be comparable in tone and abstraction to the other variants.
+- Reasons should be phrased in neutral general terms and sound generic in tone and abstraction. The rules themselves should still be strictly drawn from the metadata information of the chat transcripts. 
 - Avoid numbering, bullet symbols, or extra commentary.
 
 Return JSON only in this schema:
@@ -1278,7 +1279,7 @@ Goal: Merge near-similar rules so that only unique rules remain.
 
 Guidance for "near-similar":
 - Consider rules near-similar if they enforce the exact expectation or restriction with only phrasing/synonym changes, or trivial scope/qualifier differences that do not materially change the meaning.
-- Do not merge if a rule adds a substantive new condition, targets a different behavior (e.g., promotions vs. off-topic vs. late-night messages), contradicts another or if they are a different rule altogether albeit for the same intended behavior.
+- Do not merge if a rule adds a substantive new condition, targets a different behavior, contradicts another or if they are a different rule altogether albeit for the same intended behavior.
 - Prefer the clearest, most concise wording as the canonical text.
 - Provide a single short, neutral reason for each merged rule that stays comparable in tone to the originals.
 
@@ -1503,9 +1504,9 @@ function balanceRulesToMaximum12(mergedRules, sessionId) {
 
   console.log('[Balance] Starting with', currentRules.length, 'rules, counts:', counts);
 
-  // Check if already balanced and ≤12
-  if (isBalanced(counts) && currentRules.length <= MAX_RULES) {
-    console.log('[Balance] Already balanced and ≤12, no drops needed');
+  // ONLY drop if we start with >12 rules
+  if (currentRules.length <= MAX_RULES) {
+    console.log('[Balance] Already ≤12 rules, no drops needed');
     return { rules: currentRules, dropped: [] };
   }
 

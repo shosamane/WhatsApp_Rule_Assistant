@@ -596,6 +596,24 @@
         seed: seed
       });
 
+      // ONLY drop if we start with >12 rules
+      if (currentRules.length <= 12) {
+        log.push({
+          type: 'complete',
+          iteration: 0,
+          reason: 'Already ≤12 rules, no drops needed'
+        });
+        log.push({
+          type: 'final',
+          totalDropped: 0,
+          finalRules: currentRules.length,
+          finalCounts: { ...counts },
+          balanced: isBalanced(counts)
+        });
+        renderOutput(log);
+        return;
+      }
+
       for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
         // Check if done
         if (isBalanced(counts) && currentRules.length <= 12) {
