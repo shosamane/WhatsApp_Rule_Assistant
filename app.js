@@ -1,6 +1,6 @@
 // true = show rationales (reasons why rules are suggested)
 // false = hide rationales (only show rule text)
-const SHOW_RATIONALE = false;
+const SHOW_RATIONALE = true;
 // ============================================
 
 const dropZone = document.getElementById("drop-zone");
@@ -1273,14 +1273,15 @@ function buildMergePrompt(rules) {
   const items = rules.map(r => ({ id: r.id, source: r.source, text: r.text, reason: r.reason || "" }));
   const payloadLines = items.map(obj => JSON.stringify(obj)).join("\n");
 
-  return `You will be given a list of rules for a real WhatsApp group generated from 3 different context types (Just assume these are 3 different sources). Some rules may be near-duplicates (paraphrases or minor wording changes) while others are distinct.
+  return `You will be given a list of rules along with rationales for a real WhatsApp group generated from 3 different context types (Just assume these are 3 different sources). Some rules may be near-duplicates (paraphrases or minor wording changes) while others are distinct.
 
-Goal: Merge near-similar rules so that only unique rules remain.
+Goal: Merge near-similar rules and rationales so that only unique rules and their corresponding unique rationales remain.
 
 Guidance for "near-similar":
 - Consider rules near-similar if they enforce the exact expectation or restriction with only phrasing/synonym changes, or trivial scope/qualifier differences that do not materially change the meaning.
 - Do not merge if a rule adds a substantive new condition, targets a different behavior, contradicts another or if they are a different rule altogether albeit for the same intended behavior.
-- Prefer the clearest, most concise wording as the canonical text.
+- If 2 sources have near near-similar rules but the rationales for suggesting them are completely different (significantly different reasons), consider them as separate rules and do not merge them.
+- Prefer the clearest, most concise wording as the canonical text when merged.
 - Provide a single short, neutral reason for each merged rule that stays comparable in tone to the originals.
 
 Input rules (one JSON per line):
