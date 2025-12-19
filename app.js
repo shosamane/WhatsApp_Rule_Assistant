@@ -386,13 +386,14 @@ const initialDropZoneMarkup = dropZone.innerHTML;
 
 const GENERIC_PROMPT_TEMPLATE = ({ groupType }) => `Your task is to suggest rules for guiding user behavior and activities in WhatsApp groups.
 
-Task: Provide exactly five rules that would be suitable for a WhatsApp group categorised as "${groupType}". Each rule must be a single, self-contained statement (one short self-contained sentence) describing the expectation or restriction. For each rule, also provide a short "reason" sentence.
+Task: Provide exactly five distinct rules that would be suitable for a WhatsApp group categorised as "${groupType}". Each rule must be a single, self-contained statement (one short self-contained sentence) describing the expectation or restriction. For each rule, also provide a short "reason" sentence and a "reasoning" explanation.
 
 Requirements:
 - Try to add a mix of prescriptive rule (what members should do) and restrictive rule (what members must avoid).
 - Focus on broadly applicable group norms that you think would be applicable for "${groupType}" type, from your own prior knowledge.
 - For each rule include a neutral, general "reason" that explains the benefit of the rule without implying knowledge of any specific or anedotal knowledge of any particular group, transcript, or participants.
 - Keep the tone neutral and reasoning abstract (i.e., reasons should read like universal justifications, not case-specific commentary).
+- For each rule, also provide a "reasoning" field (2-3 sentences) that explains the underlying governance principle or logic that makes this rule valuable for "${groupType}" groups. What information that you have made you think that this rule is important?
 - Keep each rule concise and actionable; avoid duplicates and numbering.
 - CRITICAL: Ensure all five rules are SUBSTANTIVELY DIFFERENT from each other. Do NOT generate near-similar rules that could be easily merged. Verify each rule addresses a distinct concern.
 
@@ -401,7 +402,8 @@ Return JSON only in this schema:
   "rules": [
     {
       "text": "Rule statement",
-      "reason": "Neutral, general justification"
+      "reason": "Neutral, general justification",
+      "reasoning": "Detailed explanation of why you thought this rule is valuable (2-3 sentences) based on the information you have"
     }
   ]
 }`;
@@ -441,14 +443,15 @@ Context summary:
 Below is an excerpt containing the most recent ${messages.length} group activities and messages from the selected window. Each row is JSON with timestamp, sender, mediaType (text|image|video|audio|document|link|system), and content. Use it extensively to understand recurring topics, conflicts, and norms.
 ${messagesBlock}
 
-Task: Create exactly five distinct rules tailored to the observed group behaviours. Express each rule as a single, self-contained statement (one short self-contained sentence) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
+Task: Create exactly five distinct rules tailored to the observed group behaviours. Express each rule as a single, self-contained statement (one short self-contained sentence) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence and a "reasoning" explanation.
 
 Requirements:
-- Each rule must be grounded in patterns surfaced by the transcript, but do not mention the transcript, chat logs, participants, or the analysis process. Do not write "this group" or otherwise reveal that these rules come from a specific dataset.
+- Each rule must be grounded in patterns and in the transcript, but do not mention the transcript, chat logs, participants, or the analysis process. Do not write "this group" or otherwise reveal that these rules come from a specific dataset.
 - Mix of prescriptive and restrictive rules.
 - Reference specific behaviours only when they appear in the excerpt, but phrase the accompanying "reason" in neutral, general and abstract justification rather than explicit references to the observed messages.
 - Keep the tone constructive and neutral; avoid naming individuals or exposing personal data.
 - Keep reasons generic enough in tone and level of abstraction. The rules themselves should still be grounded from observations in the transcript.
+- For each rule, also provide a "reasoning" field (2-3 sentences) with specific evidence or inference that you made from the provided transcript that made you suggest this rule. What patterns, behaviors, or observations in the messages support this recommendation? Reference specific examples or inference logic that made you recommend this rule.
 - Avoid numbering, bullet symbols, or extra commentary.
 
 Return JSON only in this schema:
@@ -456,7 +459,8 @@ Return JSON only in this schema:
   "rules": [
     {
       "text": "Rule statement",
-      "reason": "Neutral, general justification grounded in patterns"
+      "reason": "Neutral, general justification grounded in patterns",
+      "reasoning": "Specific evidence or inference logic based on the provided transcript with examples that led to this rule (2-3 sentences only)"
     }
   ]
 }`;
@@ -515,13 +519,14 @@ Context summary (no message content provided):
 Below is an excerpt where each row is JSON with timestamp, sender, mediaType, and a content object that contains only metadata (word and character counts for text/link/system/deleted messages; and mediaType plus filename when available for media messages). No raw message text or URLs are included.
 ${messagesBlock}
 
-Task: Create exactly five distinct rules based only on these metadata signals that you think are the most relevant or important. Express each rule as a single, self-contained statement (one short self-contained sentence) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence.
+Task: Create exactly five distinct rules based only on these metadata signals that you think are the most relevant or important. Express each rule as a single, self-contained statement (one short self-contained sentence) that sets clear expectations or boundaries for the group. For each rule, also provide a short "reason" sentence and a "reasoning" explanation.
 
 Requirements:
-- Do not infer or reference any specific message content, quotes, or topics. Provide rules solely based on activity patterns and metadata.
+- Do not infer or reference any specific message content, quotes, or topics. Provide rules solely based on activity patterns and metadata. You can use the evidence in the metadata or infer user patterns based on the metadata for which you can make rules.
 - Mix of prescriptive and restrictive rules.
 - Keep the tone constructive and neutral; avoid naming individuals or exposing any personal data.
-- Reasons should be phrased in neutral general terms and sound generic in tone and abstraction. The rules themselves should still be strictly drawn from the metadata information of the chat transcripts. 
+- Reasons should be phrased in neutral general terms and sound generic in tone and abstraction. The rules themselves should still be strictly drawn from the metadata information of the chat transcripts.
+- For each rule, also provide a "reasoning" field (2-3 sentences) with specific evidence or inference logic that you used from the provided metadata that led to this rule. What activity metdata information/signals support this recommendation? Include specific observations you found in the metadata as your reasoning.
 - Avoid numbering, bullet symbols, or extra commentary.
 
 Return JSON only in this schema:
@@ -529,7 +534,8 @@ Return JSON only in this schema:
   "rules": [
     {
       "text": "Rule statement",
-      "reason": "Neutral, general justification grounded in metadata"
+      "reason": "Neutral, general justification grounded in metadata",
+      "reasoning": "Specific inference logic/ evidence from the information/signals from the transcript metadata that led to this rule (2-3 sentences with examples)"
     }
   ]
 }`;
