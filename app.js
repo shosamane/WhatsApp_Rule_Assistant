@@ -1110,7 +1110,7 @@ function clearRulesUI() {
   }
   // Reset generation state
   rulesGenerated = false;
-  generateBtn.textContent = "Show me rules";
+  generateBtn.textContent = "Show me the rules";
   if (proceedInstruction) {
     proceedInstruction.hidden = true;
   }
@@ -1366,7 +1366,13 @@ function parseRules(rawText) {
           throw new Error(`Rule ${index + 1} is empty.`);
         }
         const reason = typeof rule.reason === "string" ? rule.reason.trim() : undefined;
-        return reason ? { text, reason } : { text };
+        const reasoning = typeof rule.reasoning === "string" ? rule.reasoning.trim() : undefined;
+
+        // Build result object with available fields
+        const result = { text };
+        if (reason) result.reason = reason;
+        if (reasoning) result.reasoning = reasoning;
+        return result;
       }
 
       throw new Error(`Rule ${index + 1} is missing the 'text' property.`);
