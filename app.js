@@ -1145,13 +1145,13 @@ function renderRulesWithCheckboxes() {
     text.className = 'rule-checkbox-text';
     text.textContent = rule.text;
 
-    const reason = document.createElement('p');
-    reason.className = 'rule-checkbox-reason';
-    reason.textContent = rule.reason || '';
+    const reasoning = document.createElement('p');
+    reasoning.className = 'rule-checkbox-reason';
+    reasoning.textContent = rule.reasoning || '';
 
     label.appendChild(text);
-    if (rule.reason && SHOW_RATIONALE) {
-      label.appendChild(reason);
+    if (rule.reasoning && SHOW_RATIONALE) {
+      label.appendChild(reasoning);
     }
 
     content.appendChild(label);
@@ -1275,20 +1275,19 @@ async function callGemini({ prompt, model = GEMINI_MODEL }) {
 
 // Build a merge prompt for Gemini Flash to combine near-similar rules.
 function buildMergePrompt(rules) {
-  // rules: [{ id, source, text, reason }]
-  const items = rules.map(r => ({ id: r.id, source: r.source, text: r.text, reason: r.reason || "" }));
+  // rules: [{ id, source, text, reasoning }]
+  const items = rules.map(r => ({ id: r.id, source: r.source, text: r.text, reasoning: r.reasoning || "" }));
   const payloadLines = items.map(obj => JSON.stringify(obj)).join("\n");
 
-  return `You will be given a list of rules along with rationales for a real WhatsApp group generated from 3 different context types (Just assume these are 3 different sources). Some rules may be near-duplicates (paraphrases or minor wording changes) while others are distinct.
+  return `You will be given a list of rules along with their reasoning (evidence/inference) for a real WhatsApp group generated from 3 different context types (Just assume these are 3 different sources). Some rules may be near-duplicates while others are distinct.
 
-Goal: Merge near-similar rules and rationales so that only unique rules and their corresponding unique rationales remain.
+Goal: Merge rules ONLY if they have very similar reasoning (same evidence/data OR very similar inference from slightly different data). Keep rules separate if reasoning differs, even if the rule text is similar.
 
-Guidance for "near-similar":
-- Consider rules near-similar if they enforce the exact expectation or restriction with only phrasing/synonym changes, or trivial scope/qualifier differences that do not materially change the meaning.
-- Do not merge if a rule adds a substantive new condition, targets a different behavior, contradicts another or if they are a different rule altogether albeit for the same intended behavior.
-- If 2 sources have near near-similar rules but the rationales for suggesting them are completely different (significantly different reasons), consider them as separate rules and do not merge them.
-- Prefer the clearest, most concise wording as the canonical text when merged.
-- Provide a single short, neutral reason for each merged rule that stays comparable in tone to the originals.
+Guidance for merging based on "reasoning" similarity:
+- Merge if: The reasoning uses the exact same evidence/data OR makes very similar inferences about user behavior from slightly different data points.
+- Do NOT merge if: The reasoning is based on different evidence, different observations, or different behavioral patterns - even if the rule text looks similar.
+- When merging: Pick the clearest rule text and randomly select one of the similar reasoning statements (since they're similar, any one is representative).
+- CRITICAL: Two rules with similar text but different reasoning should remain as SEPARATE rules.
 
 Input rules (one JSON per line):
 ${payloadLines}
@@ -1298,7 +1297,7 @@ Return JSON only in this schema:
   "rules": [
     {
       "text": "Canonical merged rule text",
-      "reason": "Short neutral justification",
+      "reasoning": "One of the similar reasoning statements (one picked randomly from the provided)",
       "from": ["generic-1", "contextual-3", "metadata-2"]
     }
   ]
@@ -1323,6 +1322,7 @@ function parseMergedRules(rawText, idToSource) {
     const r = parsed.rules[i] || {};
     const text = typeof r.text === "string" ? r.text.trim() : "";
     const reason = typeof r.reason === "string" ? r.reason.trim() : undefined;
+    const reasoning = typeof r.reasoning === "string" ? r.reasoning.trim() : undefined;
     const from = Array.isArray(r.from) ? r.from.filter(x => typeof x === "string" && x.trim()).map(String) : [];
     if (!text) throw new Error(`Merged rule ${i + 1} has empty text.`);
     if (!from.length) throw new Error(`Merged rule ${i + 1} missing 'from' list.`);
@@ -1330,14 +1330,19 @@ function parseMergedRules(rawText, idToSource) {
     const sources = Array.from(new Set(from.map(id => idToSource.get(id)).filter(Boolean)));
     if (!sources.length) throw new Error(`Merged rule ${i + 1} references unknown ids.`);
 
-    unique.push({
+    const merged = {
       id: `merged-${i + 1}`,
       text,
-      reason,
       source: "merged",
       sources,      // categories: ["generic", "contextual", "metadata"]
       origIds: from // original ids preserved for traceability
-    });
+    };
+
+    // Include reason and reasoning if they exist
+    if (reason) merged.reason = reason;
+    if (reasoning) merged.reasoning = reasoning;
+
+    unique.push(merged);
   }
   return unique;
 }
@@ -1632,8 +1637,8 @@ function createRuleCard(rule, options) {
 
   textEl.textContent = rule.text;
   if (reasonEl) {
-    if (rule.reason && SHOW_RATIONALE) {
-      reasonEl.textContent = rule.reason;
+    if (rule.reasoning && SHOW_RATIONALE) {
+      reasonEl.textContent = rule.reasoning;
       reasonEl.hidden = false;
     } else {
       reasonEl.textContent = "";
@@ -1650,11 +1655,11 @@ function createRuleCard(rule, options) {
 
   if (isRanked) {
     card.classList.add("is-ranked");
-    const aria = rule.reason ? `Selected: ${rule.text}. Reason: ${rule.reason}` : `Selected: ${rule.text}`;
+    const aria = rule.reasoning ? `Selected: ${rule.text}. Reasoning: ${rule.reasoning}` : `Selected: ${rule.text}`;
     card.setAttribute("aria-label", aria);
   } else {
     card.classList.remove("is-ranked");
-    const aria = rule.reason ? `${rule.text}. Reason: ${rule.reason}` : rule.text;
+    const aria = rule.reasoning ? `${rule.text}. Reasoning: ${rule.reasoning}` : rule.text;
     card.setAttribute("aria-label", aria);
   }
 
@@ -2120,8 +2125,8 @@ submitRankingsBtn.addEventListener("click", async () => {
   // Populate the explanations panel
   if (selectedRuleText) selectedRuleText.textContent = selectedRuleForExplanation.text;
   if (selectedRuleReason) {
-    if (SHOW_RATIONALE && selectedRuleForExplanation.reason) {
-      selectedRuleReason.textContent = selectedRuleForExplanation.reason;
+    if (SHOW_RATIONALE && selectedRuleForExplanation.reasoning) {
+      selectedRuleReason.textContent = selectedRuleForExplanation.reasoning;
       selectedRuleReason.hidden = false;
     } else {
       selectedRuleReason.textContent = '';
@@ -2130,8 +2135,8 @@ submitRankingsBtn.addEventListener("click", async () => {
   }
   if (nonSelectedRuleText) nonSelectedRuleText.textContent = nonSelectedRuleForExplanation.text;
   if (nonSelectedRuleReason) {
-    if (SHOW_RATIONALE && nonSelectedRuleForExplanation.reason) {
-      nonSelectedRuleReason.textContent = nonSelectedRuleForExplanation.reason;
+    if (SHOW_RATIONALE && nonSelectedRuleForExplanation.reasoning) {
+      nonSelectedRuleReason.textContent = nonSelectedRuleForExplanation.reasoning;
       nonSelectedRuleReason.hidden = false;
     } else {
       nonSelectedRuleReason.textContent = '';
@@ -2530,6 +2535,7 @@ function buildSubmissionPayload({ selectedRules, genericSelections, contextualSe
   const selected = selectedRules.map(item => ({
     text: item.rule.text,
     reason: item.rule.reason,
+    reasoning: item.rule.reasoning,
     sources: item.rule.sources || [item.rule.source],
     origIds: item.rule.origIds || [],
   }));
@@ -2592,6 +2598,7 @@ function buildSubmissionPayload({ selectedRules, genericSelections, contextualSe
       selectedRule: selectedRuleForExplanation ? {
         text: selectedRuleForExplanation.text,
         reason: selectedRuleForExplanation.reason,
+        reasoning: selectedRuleForExplanation.reasoning,
         sources: selectedRuleForExplanation.sources || [selectedRuleForExplanation.source],
         id: selectedRuleForExplanation.id,
         explanation: selectedExplanation?.value || ''
@@ -2599,6 +2606,7 @@ function buildSubmissionPayload({ selectedRules, genericSelections, contextualSe
       nonSelectedRule: nonSelectedRuleForExplanation ? {
         text: nonSelectedRuleForExplanation.text,
         reason: nonSelectedRuleForExplanation.reason,
+        reasoning: nonSelectedRuleForExplanation.reasoning,
         sources: nonSelectedRuleForExplanation.sources || [nonSelectedRuleForExplanation.source],
         id: nonSelectedRuleForExplanation.id,
         explanation: nonSelectedExplanation?.value || ''
@@ -2741,6 +2749,7 @@ async function saveProgress(pageName) {
       const selectedRules = rankedRules.map((rule) => ({
         text: rule.text,
         reason: rule.reason,
+        reasoning: rule.reasoning,
         sources: rule.sources || [rule.source],
         origIds: rule.origIds || [],
       }));
@@ -2755,6 +2764,7 @@ async function saveProgress(pageName) {
         selectedRule: selectedRuleForExplanation ? {
           text: selectedRuleForExplanation.text,
           reason: selectedRuleForExplanation.reason,
+          reasoning: selectedRuleForExplanation.reasoning,
           sources: selectedRuleForExplanation.sources || [selectedRuleForExplanation.source],
           id: selectedRuleForExplanation.id,
           explanation: selectedExplanation?.value || ''
@@ -2762,6 +2772,7 @@ async function saveProgress(pageName) {
         nonSelectedRule: nonSelectedRuleForExplanation ? {
           text: nonSelectedRuleForExplanation.text,
           reason: nonSelectedRuleForExplanation.reason,
+          reasoning: nonSelectedRuleForExplanation.reasoning,
           sources: nonSelectedRuleForExplanation.sources || [nonSelectedRuleForExplanation.source],
           id: nonSelectedRuleForExplanation.id,
           explanation: nonSelectedExplanation?.value || ''
