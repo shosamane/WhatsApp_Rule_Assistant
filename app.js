@@ -1286,6 +1286,7 @@ Goal: Merge rules ONLY if they have very similar reasoning (same evidence/data O
 Guidance for merging based on "reasoning" similarity:
 - Merge if: The reasoning uses the exact same evidence/data OR makes very similar inferences about user behavior from slightly different data points.
 - Do NOT merge if: The reasoning is based on different evidence, different observations, or different behavioral patterns - even if the rule text looks similar.
+- CRITICAL: NEVER merge rules from the SAME source (e.g., do NOT merge "generic-1" with "generic-2"). ONLY merge rules from DIFFERENT sources (e.g., "generic-1" with "contextual-2" with "metadata-3" or any of those combinations).
 - When merging: Pick the clearest rule text and randomly select one of the similar reasoning statements (since they're similar, any one is representative).
 - CRITICAL: Two rules with similar text but different reasoning should remain as SEPARATE rules.
 
