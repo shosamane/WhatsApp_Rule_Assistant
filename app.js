@@ -805,11 +805,11 @@ function checkTranscriptEligibility(messages) {
   }
   result.uniqueParticipants = unique.size;
 
-  // Thresholds (updated): unique >= 3; last 30 days count >= 35
+  // Thresholds (updated): unique >= 3; last 30 days count >= 50
   result.spanOk = true; // No longer checking span
   result.totalOk = true; // No longer checking total messages
   result.uniqueOk = result.uniqueParticipants >= 3;
-  result.recentOk = result.last30Count >= 35;
+  result.recentOk = result.last30Count >= 50;
   result.ok = result.uniqueOk && result.recentOk;
   return result;
 }
@@ -1045,7 +1045,7 @@ async function loadChatFile(chat, displayLabel) {
     if (!elig.ok) {
       const bullets = [];
       if (!elig.uniqueOk) bullets.push(`- has at least 3 unique participants (current: ${elig.uniqueParticipants})`);
-      if (!elig.recentOk) bullets.push(`- has at least 35 messages in the last 30 days (current: ${elig.last30Count})`);
+      if (!elig.recentOk) bullets.push(`- has at least 50 messages in the last 30 days (current: ${elig.last30Count})`);
 
       fileStatus.style.color = "var(--error)";
       fileStatus.textContent = [
