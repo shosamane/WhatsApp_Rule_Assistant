@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Experiment 2 - Rule Setting Test</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+
+    .condition-selector {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .condition-selector h2 {
+      font-size: 18px;
+      margin-bottom: 15px;
+      color: #555;
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .radio-option input[type="radio"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .radio-option label {
+      cursor: pointer;
+      font-size: 16px;
+      color: #333;
+    }
+
+    .content-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 1024px) {
+      .content-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .mock-chat-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .mock-chat-container h3 {
+      font-size: 16px;
+      margin-bottom: 15px;
+      color: #555;
+    }
+
+    .figma-embed {
+      width: 100%;
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .rule-input-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: none;
+    }
+
+    .rule-input-container.active {
+      display: block;
+    }
+
+    .rule-input-container h3 {
+      font-size: 16px;
+      margin-bottom: 15px;
+      color: #555;
+    }
+
+    .prompt-input-group {
+      margin-bottom: 15px;
+    }
+
+    .prompt-input-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .prompt-input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .prompt-input:focus {
+      outline: none;
+      border-color: #25D366;
+      box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+    }
+
+    .generate-btn {
+      background: #25D366;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 15px;
+    }
+
+    .generate-btn:hover {
+      background: #20BA5A;
+    }
+
+    .generate-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .rules-output {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 300px;
+    }
+
+    .rules-output:focus {
+      outline: none;
+      border-color: #25D366;
+      box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+    }
+
+    .loading-indicator {
+      display: none;
+      color: #666;
+      font-style: italic;
+      margin: 10px 0;
+    }
+
+    .loading-indicator.active {
+      display: block;
+    }
+
+    .info-text {
+      color: #666;
+      font-size: 14px;
+      margin-top: 10px;
+      font-style: italic;
+    }
+
+    .error-message {
+      background: #fee;
+      color: #c33;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      display: none;
+    }
+
+    .error-message.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <h1>Experiment 2: Rule Setting Test (Demo)</h1>
+
+  <div class="condition-selector">
+    <h2>Select Testing Condition:</h2>
+    <div class="radio-group">
+      <div class="radio-option">
+        <input type="radio" id="condition1" name="condition" value="1">
+        <label for="condition1">Condition 1: Human Only</label>
+      </div>
+      <div class="radio-option">
+        <input type="radio" id="condition2" name="condition" value="2" checked>
+        <label for="condition2">Condition 2: Human + AI</label>
+      </div>
+      <div class="radio-option">
+        <input type="radio" id="condition3" name="condition" value="3">
+        <label for="condition3">Condition 3: LLM Only</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-container">
+    <!-- Mock WhatsApp Chat -->
+    <div class="mock-chat-container">
+      <h3>Family WhatsApp Group</h3>
+      <div style="display: flex; justify-content: center; padding: 20px;">
+        <iframe
+          class="figma-embed"
+          src="https://stable-ring-44205338.figma.site"
+          width="500px"
+          height="900px"
+          frameborder="0"
+          style="border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        </iframe>
+      </div>
+    </div>
+
+    <!-- Rule Input Section -->
+    <div>
+      <!-- Condition 1: Human Only -->
+      <div id="condition1-ui" class="rule-input-container">
+        <h3>Write Your Rules</h3>
+        <p class="info-text">Write rules for this WhatsApp group based on what you see in the chat.</p>
+        <textarea
+          id="human-only-textarea"
+          class="rules-output"
+          placeholder="Write your rules here..."></textarea>
+      </div>
+
+      <!-- Condition 2: Human + AI -->
+      <div id="condition2-ui" class="rule-input-container active">
+        <h3>Collaborate with AI</h3>
+        <div class="error-message" id="error-message-c2"></div>
+
+        <div class="prompt-input-group">
+          <label for="user-prompt">Your Prompt to AI:</label>
+          <textarea
+            id="user-prompt"
+            class="prompt-input"
+            placeholder="Example: Generate 5 rules for this family WhatsApp group to prevent late-night messages and reduce promotional content..."></textarea>
+        </div>
+
+        <button id="generate-btn-c2" class="generate-btn">Generate Rules</button>
+        <div class="loading-indicator" id="loading-c2">Generating rules...</div>
+
+        <div class="prompt-input-group">
+          <label for="ai-rules-c2">Generated Rules (editable):</label>
+          <textarea
+            id="ai-rules-c2"
+            class="rules-output"
+            placeholder="AI-generated rules will appear here. You can edit them after generation."></textarea>
+        </div>
+        <p class="info-text">You can refine your prompt and regenerate rules as many times as you want.</p>
+      </div>
+
+      <!-- Condition 3: LLM Only -->
+      <div id="condition3-ui" class="rule-input-container">
+        <h3>AI-Generated Rules</h3>
+        <div class="error-message" id="error-message-c3"></div>
+
+        <button id="generate-btn-c3" class="generate-btn">Generate Rules</button>
+        <div class="loading-indicator" id="loading-c3">Generating rules...</div>
+
+        <div class="prompt-input-group">
+          <label for="ai-rules-c3">Generated Rules:</label>
+          <textarea
+            id="ai-rules-c3"
+            class="rules-output"
+            placeholder="Click 'Generate Rules' to see AI-generated rules based on the full context."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="experiment2.js"></script>
+</body>
+</html>
