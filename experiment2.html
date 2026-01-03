@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Experiment 2 - Rule Setting Test</title>
+  <title>WhatsApp Admin Rulesetting Demo</title>
   <style>
     * {
       box-sizing: border-box;
@@ -81,16 +81,28 @@
       border-radius: 8px;
       padding: 20px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     .mock-chat-container h3 {
       font-size: 16px;
       margin-bottom: 15px;
       color: #555;
+      align-self: flex-start;
+    }
+
+    .iframe-wrapper {
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      justify-content: center;
     }
 
     .figma-embed {
-      width: 100%;
+      width: 500px;
+      max-width: 100%;
       border: none;
       border-radius: 8px;
       box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -213,22 +225,18 @@
   </style>
 </head>
 <body>
-  <h1>Experiment 2: Rule Setting Test (Demo)</h1>
+  <h1>WhatsApp Admin Rulesetting Demo</h1>
 
   <div class="condition-selector">
     <h2>Select Testing Condition:</h2>
     <div class="radio-group">
       <div class="radio-option">
         <input type="radio" id="condition1" name="condition" value="1">
-        <label for="condition1">Condition 1: Human Only</label>
+        <label for="condition1">Human Only</label>
       </div>
       <div class="radio-option">
         <input type="radio" id="condition2" name="condition" value="2" checked>
-        <label for="condition2">Condition 2: Human + AI</label>
-      </div>
-      <div class="radio-option">
-        <input type="radio" id="condition3" name="condition" value="3">
-        <label for="condition3">Condition 3: LLM Only</label>
+        <label for="condition2">Human + AI</label>
       </div>
     </div>
   </div>
@@ -237,14 +245,13 @@
     <!-- Mock WhatsApp Chat -->
     <div class="mock-chat-container">
       <h3>Family WhatsApp Group</h3>
-      <div style="display: flex; justify-content: center; padding: 20px;">
+      <div class="iframe-wrapper">
         <iframe
           class="figma-embed"
           src="whatsapp-mock/index.html"
-          width="500px"
-          height="900px"
-          frameborder="0"
-          style="border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          width="500"
+          height="900"
+          frameborder="0">
         </iframe>
       </div>
     </div>
@@ -287,22 +294,6 @@
         <p class="info-text">You can refine your prompt and regenerate rules as many times as you want.</p>
       </div>
 
-      <!-- Condition 3: LLM Only -->
-      <div id="condition3-ui" class="rule-input-container">
-        <h3>AI-Generated Rules</h3>
-        <div class="error-message" id="error-message-c3"></div>
-
-        <button id="generate-btn-c3" class="generate-btn">Generate Rules</button>
-        <div class="loading-indicator" id="loading-c3">Generating rules...</div>
-
-        <div class="prompt-input-group">
-          <label for="ai-rules-c3">Generated Rules:</label>
-          <textarea
-            id="ai-rules-c3"
-            class="rules-output"
-            placeholder="Click 'Generate Rules' to see AI-generated rules based on the full context."></textarea>
-        </div>
-      </div>
     </div>
   </div>
 
