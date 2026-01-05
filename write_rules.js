@@ -74,8 +74,9 @@ window.addEventListener('message', (event) => {
     sessionStorage.setItem('exp2_scrolled_to_bottom', 'true');
     sessionStorage.setItem('exp2_scrolled_to_bottom_timestamp', new Date().toISOString());
 
-    // Update submit button state since scroll requirement is now met
+    // Update submit button state and requirements indicator
     updateSubmitButtonState();
+    updateRequirementsIndicator();
   }
 });
 
@@ -400,7 +401,7 @@ function updateSubmitButtonState() {
   const submitBtn = currentCondition === '1' ? submitBtnC1 : submitBtnC2;
   if (!submitBtn) return;
 
-  const { hasScrolled, hasRules, canSubmit: canSubmitNow } = canSubmit();
+  const { canSubmit: canSubmitNow } = canSubmit();
 
   // Keep button enabled so clicks work, but style it to look disabled
   submitBtn.disabled = false;
@@ -417,30 +418,92 @@ function updateSubmitButtonState() {
   }
 }
 
-// Add input listeners to update submit button state
+// Update requirements indicator in real-time
+function updateRequirementsIndicator() {
+  const { hasScrolled, hasEnoughWords, hasPromptedAI } = canSubmit();
+
+  if (currentCondition === '1') {
+    // Human Only condition
+    const reqScrollEl = document.getElementById('req-scroll-c1');
+    const reqRulesEl = document.getElementById('req-rules-c1');
+    const requirementsEl = document.getElementById('requirements-c1');
+
+    if (reqScrollEl && reqRulesEl && requirementsEl) {
+      // Update scroll requirement
+      if (hasScrolled) {
+        reqScrollEl.classList.add('completed');
+      } else {
+        reqScrollEl.classList.remove('completed');
+      }
+
+      // Update rules requirement
+      if (hasEnoughWords) {
+        reqRulesEl.classList.add('completed');
+      } else {
+        reqRulesEl.classList.remove('completed');
+      }
+
+      // Update overall indicator
+      if (hasScrolled && hasEnoughWords) {
+        requirementsEl.classList.add('all-complete');
+        requirementsEl.innerHTML = '<span style="font-size: 16px; margin-right: 4px;">✓</span> Ready to submit!';
+      } else {
+        requirementsEl.classList.remove('all-complete');
+      }
+    }
+  } else {
+    // Human + AI condition
+    const reqScrollEl = document.getElementById('req-scroll-c2');
+    const reqAiEl = document.getElementById('req-ai-c2');
+    const requirementsEl = document.getElementById('requirements-c2');
+
+    if (reqScrollEl && reqAiEl && requirementsEl) {
+      // Update scroll requirement
+      if (hasScrolled) {
+        reqScrollEl.classList.add('completed');
+      } else {
+        reqScrollEl.classList.remove('completed');
+      }
+
+      // Update AI prompt requirement
+      if (hasPromptedAI) {
+        reqAiEl.classList.add('completed');
+      } else {
+        reqAiEl.classList.remove('completed');
+      }
+
+      // Update overall indicator
+      if (hasScrolled && hasPromptedAI) {
+        requirementsEl.classList.add('all-complete');
+        requirementsEl.innerHTML = '<span style="font-size: 16px; margin-right: 4px;">✓</span> Ready to submit!';
+      } else {
+        requirementsEl.classList.remove('all-complete');
+      }
+    }
+  }
+}
+
+// Add input listeners to update submit button state and requirements
 if (humanOnlyTextarea) {
   humanOnlyTextarea.addEventListener('input', () => {
     rulesSubmitted = false;
-    // Clear error message when user starts typing
-    if (errorMessageC1) errorMessageC1.classList.remove('active');
     updateSubmitButtonState();
+    updateRequirementsIndicator();
   });
 }
 
 if (aiRulesC2) {
   aiRulesC2.addEventListener('input', () => {
     rulesSubmitted = false;
-    // Clear error message when user starts typing
-    if (errorMessageC2) errorMessageC2.classList.remove('active');
     updateSubmitButtonState();
+    updateRequirementsIndicator();
   });
 }
 
 if (userPromptInput) {
   userPromptInput.addEventListener('input', () => {
-    // Clear error message when user starts typing
-    if (errorMessageC2) errorMessageC2.classList.remove('active');
     updateSubmitButtonState();
+    updateRequirementsIndicator();
   });
 }
 
@@ -510,6 +573,10 @@ generateBtnC2.addEventListener('click', async () => {
     sessionStorage.setItem('exp2_user_prompt', userPrompt);
     sessionStorage.setItem('exp2_generated_rules', result);
 
+    // Update requirements indicator since AI has been prompted
+    updateSubmitButtonState();
+    updateRequirementsIndicator();
+
   } catch (error) {
     console.error('Generation error:', error);
     errorMessageC2.textContent = `Error: ${error.message}`;
@@ -523,32 +590,15 @@ generateBtnC2.addEventListener('click', async () => {
 // Submit button for Condition 2
 if (submitBtnC2) {
   submitBtnC2.addEventListener('click', () => {
-    const { hasScrolled, hasPromptedAI, canSubmit: canSubmitNow } = canSubmit();
+    const { canSubmit: canSubmitNow } = canSubmit();
 
-    // Check all conditions
+    // Check if user can submit
     if (!canSubmitNow) {
-      // Show specific error message
-      let errorMsg = '';
-      if (!hasScrolled && !hasPromptedAI) {
-        errorMsg = 'Please scroll through the entire conversation and send at least one prompt to the AI before submitting.';
-      } else if (!hasScrolled) {
-        errorMsg = 'Please scroll through the entire conversation before submitting.';
-      } else if (!hasPromptedAI) {
-        errorMsg = 'Please send at least one prompt to the AI to generate rules.';
-      }
-
-      // Show error message visibly
-      errorMessageC2.textContent = errorMsg;
-      errorMessageC2.classList.add('active');
-
-      // Scroll to error message so user sees it
-      errorMessageC2.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
+      // Requirements indicator already shows what's needed
       return;
     }
 
     const rules = aiRulesC2.value.trim();
-    errorMessageC2.classList.remove('active');
     sessionStorage.setItem('exp2_final_rules', rules);
     sessionStorage.setItem('exp2_timestamp_submit', new Date().toISOString());
 
@@ -562,7 +612,7 @@ if (submitBtnC2) {
     }).catch((error) => {
       console.error('Error saving progress:', error);
       alert('Failed to save your progress. Please try again.');
-      submitBtnC2.textContent = 'Submit and Continue';
+      submitBtnC2.textContent = 'Submit and continue';
       submitBtnC2.disabled = false;
     });
   });
@@ -572,32 +622,15 @@ if (submitBtnC2) {
 const submitBtnC1 = document.getElementById('submit-btn-c1');
 if (submitBtnC1) {
   submitBtnC1.addEventListener('click', () => {
-    const { hasScrolled, hasEnoughWords, canSubmit: canSubmitNow } = canSubmit();
+    const { canSubmit: canSubmitNow } = canSubmit();
 
-    // Check all conditions
+    // Check if user can submit
     if (!canSubmitNow) {
-      // Show specific error message
-      let errorMsg = '';
-      if (!hasScrolled && !hasEnoughWords) {
-        errorMsg = 'Please scroll through the entire conversation and write more substantively before submitting.';
-      } else if (!hasScrolled) {
-        errorMsg = 'Please scroll through the entire conversation before submitting.';
-      } else if (!hasEnoughWords) {
-        errorMsg = 'Please write more substantively.';
-      }
-
-      // Show error message visibly
-      errorMessageC1.textContent = errorMsg;
-      errorMessageC1.classList.add('active');
-
-      // Scroll to error message so user sees it
-      errorMessageC1.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
+      // Requirements indicator already shows what's needed
       return;
     }
 
     const rules = humanOnlyTextarea.value.trim();
-    errorMessageC1.classList.remove('active');
     sessionStorage.setItem('exp2_final_rules', rules);
     sessionStorage.setItem('exp2_timestamp_submit', new Date().toISOString());
 
@@ -611,7 +644,7 @@ if (submitBtnC1) {
     }).catch((error) => {
       console.error('Error saving progress:', error);
       alert('Failed to save your progress. Please try again.');
-      submitBtnC1.textContent = 'Submit and Continue';
+      submitBtnC1.textContent = 'Submit and continue';
       submitBtnC1.disabled = false;
     });
   });
@@ -723,6 +756,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Initialize submit button state
+  // Initialize submit button state and requirements indicator
   updateSubmitButtonState();
+  updateRequirementsIndicator();
 });

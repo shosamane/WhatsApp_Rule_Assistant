@@ -268,6 +268,59 @@
       display: block;
     }
 
+    /* Requirements indicator */
+    .requirements-indicator {
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      border-radius: 4px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #856404;
+    }
+
+    .requirements-indicator.all-complete {
+      background: #d4edda;
+      border-left-color: #28a745;
+      color: #155724;
+    }
+
+    .requirements-indicator .warning-icon {
+      font-size: 16px;
+      margin-right: 4px;
+    }
+
+    .requirements-indicator ul {
+      margin: 8px 0 0 0;
+      padding-left: 20px;
+      list-style: none;
+    }
+
+    .requirements-indicator li {
+      margin: 4px 0;
+      position: relative;
+      padding-left: 24px;
+    }
+
+    .requirements-indicator li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      font-weight: bold;
+    }
+
+    .requirements-indicator li.completed::before {
+      content: '✓';
+      color: #28a745;
+      font-weight: bold;
+    }
+
+    .requirements-indicator li.completed {
+      color: #28a745;
+      text-decoration: line-through;
+    }
+
     /* Additional responsive improvements */
     @media (max-width: 600px) {
       body {
@@ -340,20 +393,24 @@
       <div id="condition1-ui" class="rule-input-container">
         <h3>Write Your Rules</h3>
         <p class="info-text" style="margin-bottom: 15px; line-height: 1.6;">Based on what you observed in the WhatsApp conversation, write the rules you would set for this group as an admin. Think about guidelines that would help maintain a healthy group environment.</p>
-        <div class="error-message" id="error-message-c1"></div>
         <textarea
           id="human-only-textarea"
           class="rules-output"
           placeholder="Write your rules here..."></textarea>
-        <button id="submit-btn-c1" class="generate-btn">Submit and Continue</button>
-        <p class="info-text">Once you are satisfied with your rules, press Submit to continue.</p>
+        <button id="submit-btn-c1" class="generate-btn">Submit and continue</button>
+        <div id="requirements-c1" class="requirements-indicator">
+          <span class="warning-icon">⚠️</span> To submit, you need to:
+          <ul>
+            <li id="req-scroll-c1">Read and understand the entire conversation</li>
+            <li id="req-rules-c1">Write more substantively</li>
+          </ul>
+        </div>
       </div>
 
       <!-- Condition 2: Human + AI -->
       <div id="condition2-ui" class="rule-input-container active">
         <h3>Collaborate with AI</h3>
         <p class="info-text" style="margin-bottom: 15px; line-height: 1.6;">The AI has access to all the messages in the WhatsApp conversation. You can ask the AI to help you generate rules based on what you want to achieve for the group. Describe your preferences, and the AI will suggest rules accordingly. Every time you click the "Send to AI" button, the AI is going to write new content in the canvas below that you can edit. You can send instructions to AI as many times as you want.</p>
-        <div class="error-message" id="error-message-c2"></div>
 
         <div class="prompt-input-group">
           <label for="user-prompt">Your Prompt to AI:</label>
@@ -375,7 +432,14 @@
             placeholder="AI-generated rules will appear here. You can edit them after generation."></textarea>
         </div>
 
-        <button id="submit-btn-c2" class="generate-btn">Submit and Continue</button>
+        <button id="submit-btn-c2" class="generate-btn">Submit and continue</button>
+        <div id="requirements-c2" class="requirements-indicator">
+          <span class="warning-icon">⚠️</span> To submit, you need to:
+          <ul>
+            <li id="req-scroll-c2">Read and understand the entire conversation</li>
+            <li id="req-ai-c2">Prompt the AI to generate rules and edit the rules as per your liking</li>
+          </ul>
+        </div>
       </div>
 
     </div>
