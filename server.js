@@ -207,7 +207,17 @@ app.post(`${base}/api/store`, async (req, res) => {
 
     const client = await getMongo();
     const db = client.db(mongoDbName);
-    const coll = db.collection(mongoColl);
+
+    // Route to different collections based on experimentType
+    let collectionName = mongoColl; // Default to 'submissions'
+    if (payload.experimentType === 'experiment1') {
+      collectionName = 'Experiment1';
+    } else if (payload.experimentType === 'experiment2') {
+      collectionName = 'Experiment2';
+    }
+
+    const coll = db.collection(collectionName);
+    console.log(`[store] Saving to collection: ${collectionName}, experimentType: ${payload.experimentType}, sessionId: ${sessionId}`);
 
     // Extract createdAt to avoid conflict between $set and $setOnInsert
     const { createdAt, ...updateFields } = payload;
@@ -222,9 +232,12 @@ app.post(`${base}/api/store`, async (req, res) => {
       { upsert: true }
     );
 
+    console.log(`[store] Result - matched: ${result.matchedCount}, modified: ${result.modifiedCount}, upserted: ${result.upsertedCount}`);
+
     return res.json({
       ok: true,
       sessionId: sessionId,
+      collection: collectionName,
       matched: result.matchedCount,
       modified: result.modifiedCount,
       upserted: result.upsertedCount

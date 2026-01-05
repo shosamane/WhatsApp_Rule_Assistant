@@ -255,7 +255,20 @@
   </style>
 </head>
 <body>
-  <h1>WhatsApp Admin Rulesetting Demo</h1>
+  <h1>Mock Family WhatsApp Group Scenario</h1>
+
+  <!-- Instructions -->
+  <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <h2 style="font-size: 18px; margin-bottom: 15px; color: #555;">Instructions</h2>
+    <p style="margin-bottom: 10px; line-height: 1.6;">On the left, you will see a mock WhatsApp group conversation from a family group. Please:</p>
+    <ul style="margin-left: 20px; margin-bottom: 15px; line-height: 1.8;">
+      <li><strong>Scroll through the conversation</strong> as you would on your phone, from top to bottom.</li>
+      <li><strong>Read all the messages carefully</strong> to understand the group dynamics, interactions, and any issues that may arise.</li>
+      <li><strong>Imagine you are the admin</strong> of this WhatsApp group.</li>
+      <li><strong>Think about what rules you would set</strong> to promote the well-being of the group, reduce potential conflicts, maintain respectful communication, and ensure a positive environment for all members.</li>
+    </ul>
+    <p style="margin-bottom: 10px; line-height: 1.6;">After reviewing the conversation, you will write rules for this group. Consider what guidelines would help the group function better and prevent issues from escalating.</p>
+  </div>
 
   <div class="condition-selector">
     <h2>Select Testing Condition:</h2>
@@ -291,16 +304,19 @@
       <!-- Condition 1: Human Only -->
       <div id="condition1-ui" class="rule-input-container">
         <h3>Write Your Rules</h3>
-        <p class="info-text">Write rules for this WhatsApp group based on what you see in the chat.</p>
+        <p class="info-text" style="margin-bottom: 15px; line-height: 1.6;">Based on what you observed in the WhatsApp conversation, write the rules you would set for this group as an admin. Think about guidelines that would help maintain a healthy group environment.</p>
         <textarea
           id="human-only-textarea"
           class="rules-output"
           placeholder="Write your rules here..."></textarea>
+        <button id="submit-btn-c1" class="generate-btn" style="margin-top: 15px;">Submit</button>
+        <p class="info-text">Once you are satisfied with your rules, press Submit to continue.</p>
       </div>
 
       <!-- Condition 2: Human + AI -->
       <div id="condition2-ui" class="rule-input-container active">
         <h3>Collaborate with AI</h3>
+        <p class="info-text" style="margin-bottom: 15px; line-height: 1.6;">The AI has access to all the messages in the WhatsApp conversation. You can ask the AI to help you generate rules based on what you want to achieve for the group. Describe your preferences, and the AI will suggest rules accordingly.</p>
         <div class="error-message" id="error-message-c2"></div>
 
         <div class="prompt-input-group">
@@ -308,11 +324,11 @@
           <textarea
             id="user-prompt"
             class="prompt-input"
-            placeholder="Example: Generate 5 rules for this family WhatsApp group to prevent late-night messages and reduce promotional content..."></textarea>
+            placeholder="Example: Read the group conversation and generate rules that promote respectful communication and maintain group harmony..."></textarea>
         </div>
 
         <button id="generate-btn-c2" class="generate-btn">Generate Rules</button>
-        <div class="loading-indicator" id="loading-c2">Generating rules...</div>
+        <div class="loading-indicator" id="loading-c2">Generating Rules -- wait a moment</div>
 
         <div class="prompt-input-group">
           <label for="ai-rules-c2">Generated Rules (editable):</label>
@@ -321,7 +337,8 @@
             class="rules-output"
             placeholder="AI-generated rules will appear here. You can edit them after generation."></textarea>
         </div>
-        <p class="info-text">You can refine your prompt and regenerate rules as many times as you want.</p>
+        <button id="submit-btn-c2" class="generate-btn" style="margin-top: 15px;">Submit</button>
+        <p class="info-text">You can refine your prompt and regenerate rules as many times as you want. Once you are satisfied with the rules, press Submit to continue.</p>
       </div>
 
     </div>
