@@ -309,8 +309,6 @@ function getWhatsAppMessages() {
 }
 
 // Elements
-const condition1Radio = document.getElementById('condition1');
-const condition2Radio = document.getElementById('condition2');
 const condition1UI = document.getElementById('condition1-ui');
 const condition2UI = document.getElementById('condition2-ui');
 const humanOnlyTextarea = document.getElementById('human-only-textarea');
@@ -324,7 +322,7 @@ const backBtn = document.getElementById('back-btn');
 const continueBtn = document.getElementById('continue-btn');
 
 // State
-let currentCondition = '2'; // Default to Human + AI
+let currentCondition = null; // Will be randomly assigned
 let generatedRulesHistory = []; // Store all generated rules for condition 2
 let rulesSubmitted = false; // Track if rules have been submitted
 
@@ -345,8 +343,12 @@ function switchCondition(conditionValue) {
   updateContinueButton();
 }
 
-condition1Radio.addEventListener('change', () => switchCondition('1'));
-condition2Radio.addEventListener('change', () => switchCondition('2'));
+// Randomly assign condition with equal probability (0.5 each)
+function assignRandomCondition() {
+  const randomCondition = Math.random() < 0.5 ? '1' : '2';
+  console.log(`[Condition Assignment] Randomly assigned condition: ${randomCondition === '1' ? 'Human Only' : 'Human + AI'}`);
+  return randomCondition;
+}
 
 // Update continue button state
 function updateContinueButton() {
@@ -585,16 +587,15 @@ async function saveProgress(pageName) {
 window.addEventListener('DOMContentLoaded', () => {
   const savedCondition = sessionStorage.getItem('exp2_condition');
   if (savedCondition) {
+    // User has already been assigned a condition, restore it
     currentCondition = savedCondition;
     if (savedCondition === '1') {
-      condition1Radio.checked = true;
       const savedRules = sessionStorage.getItem('exp2_final_rules');
       if (savedRules) {
         humanOnlyTextarea.value = savedRules;
         rulesSubmitted = true; // Assume previously saved means submitted
       }
     } else {
-      condition2Radio.checked = true;
       const savedPrompt = sessionStorage.getItem('exp2_user_prompt');
       const savedGenerated = sessionStorage.getItem('exp2_generated_rules');
       const savedFinal = sessionStorage.getItem('exp2_final_rules');
@@ -608,8 +609,9 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     switchCondition(savedCondition);
   } else {
-    // Default to condition 2
-    switchCondition('2');
+    // First time visitor: randomly assign condition with equal probability
+    const assignedCondition = assignRandomCondition();
+    switchCondition(assignedCondition);
   }
 
   updateContinueButton();
