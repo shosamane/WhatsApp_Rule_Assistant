@@ -32,9 +32,38 @@
       margin-bottom: 20px;
     }
 
-    @media (max-width: 1024px) {
+    /* Tablet and larger screens: keep side-by-side layout */
+    /* Only stack on mobile devices (smaller than 768px) */
+    @media (max-width: 767px) {
       .content-container {
         grid-template-columns: 1fr;
+      }
+
+      /* Ensure WhatsApp mock is clearly visible and full-size on mobile */
+      .mock-chat-container {
+        order: 1; /* WhatsApp mock appears first */
+        margin-bottom: 20px;
+      }
+
+      .rule-input-container {
+        order: 2; /* Rule input appears below */
+      }
+
+      /* Make iframe more visible on mobile */
+      .iframe-wrapper {
+        max-width: 100%;
+      }
+
+      .figma-embed {
+        width: 100%;
+        max-width: 500px;
+        /* Enable zoom/pinch on mobile */
+        touch-action: manipulation;
+      }
+
+      .mock-chat-container h3 {
+        font-size: 14px;
+        line-height: 1.4;
       }
     }
 
@@ -252,7 +281,7 @@
   </style>
 </head>
 <body>
-  <h1>Mock Family WhatsApp Group Scenario</h1>
+  <h1>Family WhatsApp Group Scenario</h1>
 
   <!-- Instructions -->
   <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
@@ -268,9 +297,11 @@
   </div>
 
   <div class="content-container">
-    <!-- Mock WhatsApp Chat -->
+    <!-- WhatsApp Chat -->
     <div class="mock-chat-container">
-      <h3>Family WhatsApp Group -- scroll down to read through the whole conversation</h3>
+      <h3 style="color: #000; font-weight: normal; line-height: 1.5;">
+        Scroll down to read through the whole conversation. Read and understand the conversation before you write the rules for this group. <span style="color: #1565C0; font-weight: bold;">You will only be compensated if you read the whole conversation thoroughly.</span>
+      </h3>
       <div class="iframe-wrapper">
         <iframe
           id="whatsapp-iframe"
@@ -293,7 +324,7 @@
           id="human-only-textarea"
           class="rules-output"
           placeholder="Write your rules here..."></textarea>
-        <button id="submit-btn-c1" class="generate-btn" style="margin-top: 15px;">Submit</button>
+        <button id="submit-btn-c1" class="generate-btn" style="margin-top: 15px;" title="">Submit and Continue</button>
         <p class="info-text">Once you are satisfied with your rules, press Submit to continue.</p>
       </div>
 
@@ -323,16 +354,10 @@
             placeholder="AI-generated rules will appear here. You can edit them after generation."></textarea>
         </div>
 
-        <button id="submit-btn-c2" class="generate-btn" style="margin-top: 15px;">Submit</button>
+        <button id="submit-btn-c2" class="generate-btn" style="margin-top: 15px;" title="">Submit and Continue</button>
       </div>
 
     </div>
-  </div>
-
-  <!-- Navigation Buttons -->
-  <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center;">
-    <button id="back-btn" style="padding: 12px 24px; background: #ccc; color: #333; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">Back</button>
-    <button id="continue-btn" style="padding: 12px 24px; background: #25D366; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;" disabled>Continue</button>
   </div>
 
   <script src="write_rules.js"></script>

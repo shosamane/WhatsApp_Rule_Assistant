@@ -46,8 +46,9 @@ function assignWhatsAppVersion() {
 // Initialize version on page load
 const whatsappVersion = assignWhatsAppVersion();
 
-// Listen for version selection from WhatsApp mock iframe
+// Listen for messages from WhatsApp mock iframe
 window.addEventListener('message', (event) => {
+  // Handle version selection
   if (event.data && event.data.type === 'whatsapp_version_selected') {
     const version = event.data.version;
     console.log(`[write_rules] WhatsApp mock selected version: ${version}`);
@@ -63,6 +64,18 @@ window.addEventListener('message', (event) => {
     sessionStorage.setItem('exp2_whatsapp_version_label', versionLabels[version]);
 
     console.log(`[write_rules] Stored version ${version}: ${versionLabels[version]}`);
+  }
+
+  // Handle scroll to bottom tracking
+  if (event.data && event.data.type === 'whatsapp_scrolled_to_bottom') {
+    console.log('[write_rules] User scrolled to bottom of WhatsApp conversation');
+
+    // Store that user has read the full conversation
+    sessionStorage.setItem('exp2_scrolled_to_bottom', 'true');
+    sessionStorage.setItem('exp2_scrolled_to_bottom_timestamp', new Date().toISOString());
+
+    // Update submit button state since scroll requirement is now met
+    updateSubmitButtonState();
   }
 });
 
@@ -318,8 +331,7 @@ const submitBtnC2 = document.getElementById('submit-btn-c2');
 const loadingC2 = document.getElementById('loading-c2');
 const errorMessageC2 = document.getElementById('error-message-c2');
 const aiRulesC2 = document.getElementById('ai-rules-c2');
-const backBtn = document.getElementById('back-btn');
-const continueBtn = document.getElementById('continue-btn');
+// Buttons removed - Submit button now handles everything
 
 // State
 let currentCondition = null; // Will be randomly assigned
@@ -340,7 +352,6 @@ function switchCondition(conditionValue) {
 
   sessionStorage.setItem('exp2_condition', conditionValue);
   rulesSubmitted = false; // Reset submission state when switching conditions
-  updateContinueButton();
 }
 
 // Randomly assign condition with equal probability (0.5 each)
@@ -350,27 +361,75 @@ function assignRandomCondition() {
   return randomCondition;
 }
 
-// Update continue button state
-function updateContinueButton() {
+// Check if user can submit (has scrolled to bottom AND written rules)
+function canSubmit() {
+  const hasScrolled = sessionStorage.getItem('exp2_scrolled_to_bottom') === 'true';
+
+  let hasRules = false;
   if (currentCondition === '1') {
-    // Human Only: require submission
-    continueBtn.disabled = !rulesSubmitted;
+    hasRules = humanOnlyTextarea && humanOnlyTextarea.value.trim().length > 0;
   } else {
-    // Human + AI: require submission
-    continueBtn.disabled = !rulesSubmitted;
+    hasRules = aiRulesC2 && aiRulesC2.value.trim().length > 0;
+  }
+
+  return { hasScrolled, hasRules, canSubmit: hasScrolled && hasRules };
+}
+
+// Update submit button state and tooltip
+function updateSubmitButtonState() {
+  const submitBtn = currentCondition === '1' ? submitBtnC1 : submitBtnC2;
+  if (!submitBtn) return;
+
+  const { hasScrolled, hasRules, canSubmit: canSubmitNow } = canSubmit();
+
+  submitBtn.disabled = !canSubmitNow;
+
+  // Set tooltip message based on what's missing
+  let tooltipMessage = '';
+  if (!hasScrolled && !hasRules) {
+    tooltipMessage = 'Please scroll through the entire conversation and write rules before submitting.';
+  } else if (!hasScrolled) {
+    tooltipMessage = 'Please scroll through the entire conversation before submitting.';
+  } else if (!hasRules) {
+    tooltipMessage = currentCondition === '1'
+      ? 'Please write rules before submitting.'
+      : 'Please generate or write rules before submitting.';
+  } else {
+    tooltipMessage = 'Click to submit and continue to the next page.';
+  }
+
+  submitBtn.setAttribute('title', tooltipMessage);
+
+  // Update styling for disabled state
+  if (!canSubmitNow) {
+    submitBtn.style.opacity = '0.5';
+    submitBtn.style.cursor = 'not-allowed';
+  } else {
+    submitBtn.style.opacity = '1';
+    submitBtn.style.cursor = 'pointer';
   }
 }
 
-// Add input listeners
-humanOnlyTextarea.addEventListener('input', () => {
-  rulesSubmitted = false;
-  updateContinueButton();
-});
-aiRulesC2.addEventListener('input', () => {
-  rulesSubmitted = false;
-  updateContinueButton();
-});
-userPromptInput.addEventListener('input', updateContinueButton);
+// Add input listeners to update submit button state
+if (humanOnlyTextarea) {
+  humanOnlyTextarea.addEventListener('input', () => {
+    rulesSubmitted = false;
+    updateSubmitButtonState();
+  });
+}
+
+if (aiRulesC2) {
+  aiRulesC2.addEventListener('input', () => {
+    rulesSubmitted = false;
+    updateSubmitButtonState();
+  });
+}
+
+if (userPromptInput) {
+  userPromptInput.addEventListener('input', () => {
+    updateSubmitButtonState();
+  });
+}
 
 // Call Gemini API with full message context
 async function callGemini(prompt) {
@@ -422,7 +481,6 @@ generateBtnC2.addEventListener('click', async () => {
   loadingC2.classList.add('active');
   aiRulesC2.value = '';
   rulesSubmitted = false; // Reset submission when generating new rules
-  updateContinueButton();
 
   try {
     const result = await callGemini(userPrompt);
@@ -452,28 +510,44 @@ generateBtnC2.addEventListener('click', async () => {
 // Submit button for Condition 2
 if (submitBtnC2) {
   submitBtnC2.addEventListener('click', () => {
-    const rules = aiRulesC2.value.trim();
-    if (!rules) {
-      errorMessageC2.textContent = 'Please generate or write rules before submitting.';
+    const { hasScrolled, hasRules, canSubmit: canSubmitNow } = canSubmit();
+
+    // Check all conditions
+    if (!canSubmitNow) {
+      // Show specific error message
+      let errorMsg = '';
+      if (!hasScrolled && !hasRules) {
+        errorMsg = 'Please scroll through the entire conversation and generate/write rules before submitting.';
+      } else if (!hasScrolled) {
+        errorMsg = 'Please scroll through the entire conversation before submitting.';
+      } else if (!hasRules) {
+        errorMsg = 'Please generate or write rules before submitting.';
+      }
+
+      errorMessageC2.textContent = errorMsg;
       errorMessageC2.classList.add('active');
+      alert(errorMsg);
       return;
     }
 
+    const rules = aiRulesC2.value.trim();
     errorMessageC2.classList.remove('active');
-    rulesSubmitted = true;
     sessionStorage.setItem('exp2_final_rules', rules);
     sessionStorage.setItem('exp2_timestamp_submit', new Date().toISOString());
 
-    // Save to database immediately when Submit is clicked
-    saveProgress('write_rules_submitted');
-
-    updateContinueButton();
-
     // Visual feedback
-    submitBtnC2.textContent = 'Submitted ✓';
-    setTimeout(() => {
-      submitBtnC2.textContent = 'Submit';
-    }, 2000);
+    submitBtnC2.textContent = 'Submitting...';
+    submitBtnC2.disabled = true;
+
+    // Save to database and navigate to demographics
+    saveProgress('write_rules_complete').then(() => {
+      window.location.href = 'exp2_demographics.html';
+    }).catch((error) => {
+      console.error('Error saving progress:', error);
+      alert('Failed to save your progress. Please try again.');
+      submitBtnC2.textContent = 'Submit and Continue';
+      submitBtnC2.disabled = false;
+    });
   });
 }
 
@@ -481,53 +555,44 @@ if (submitBtnC2) {
 const submitBtnC1 = document.getElementById('submit-btn-c1');
 if (submitBtnC1) {
   submitBtnC1.addEventListener('click', () => {
-    const rules = humanOnlyTextarea.value.trim();
-    if (!rules) {
-      alert('Please write rules before submitting.');
+    const { hasScrolled, hasRules, canSubmit: canSubmitNow } = canSubmit();
+
+    // Check all conditions
+    if (!canSubmitNow) {
+      // Show specific error message
+      let errorMsg = '';
+      if (!hasScrolled && !hasRules) {
+        errorMsg = 'Please scroll through the entire conversation and write rules before submitting.';
+      } else if (!hasScrolled) {
+        errorMsg = 'Please scroll through the entire conversation before submitting.';
+      } else if (!hasRules) {
+        errorMsg = 'Please write rules before submitting.';
+      }
+
+      alert(errorMsg);
       return;
     }
 
-    rulesSubmitted = true;
+    const rules = humanOnlyTextarea.value.trim();
     sessionStorage.setItem('exp2_final_rules', rules);
     sessionStorage.setItem('exp2_timestamp_submit', new Date().toISOString());
 
-    // Save to database immediately when Submit is clicked
-    saveProgress('write_rules_submitted');
-
-    updateContinueButton();
-
     // Visual feedback
-    submitBtnC1.textContent = 'Submitted ✓';
-    setTimeout(() => {
-      submitBtnC1.textContent = 'Submit';
-    }, 2000);
+    submitBtnC1.textContent = 'Submitting...';
+    submitBtnC1.disabled = true;
+
+    // Save to database and navigate to demographics
+    saveProgress('write_rules_complete').then(() => {
+      window.location.href = 'exp2_demographics.html';
+    }).catch((error) => {
+      console.error('Error saving progress:', error);
+      alert('Failed to save your progress. Please try again.');
+      submitBtnC1.textContent = 'Submit and Continue';
+      submitBtnC1.disabled = false;
+    });
   });
 }
 
-// Back button
-backBtn.addEventListener('click', () => {
-  // Save current progress before going back
-  saveProgress('write_rules_back').then(() => {
-    window.location.href = 'exp2_consent.html';
-  });
-});
-
-// Continue button
-continueBtn.addEventListener('click', () => {
-  // Save final rules
-  if (currentCondition === '1') {
-    sessionStorage.setItem('exp2_final_rules', humanOnlyTextarea.value.trim());
-    sessionStorage.removeItem('exp2_user_prompt');
-    sessionStorage.removeItem('exp2_generated_rules');
-  } else {
-    sessionStorage.setItem('exp2_final_rules', aiRulesC2.value.trim());
-  }
-
-  // Save to backend and navigate
-  saveProgress('write_rules_complete').then(() => {
-    window.location.href = 'exp2_demographics.html';
-  });
-});
 
 // Save progress to backend
 async function saveProgress(pageName) {
@@ -547,7 +612,9 @@ async function saveProgress(pageName) {
       },
       whatsappVersion: {
         version: whatsappVersion,
-        label: whatsappVersionLabel
+        label: whatsappVersionLabel,
+        scrolledToBottom: sessionStorage.getItem('exp2_scrolled_to_bottom') === 'true',
+        scrolledToBottomTimestamp: sessionStorage.getItem('exp2_scrolled_to_bottom_timestamp') || null
       },
       condition: currentCondition,
       rules: {
@@ -614,8 +681,6 @@ window.addEventListener('DOMContentLoaded', () => {
     switchCondition(assignedCondition);
   }
 
-  updateContinueButton();
-
   // Disable paste in specific textareas
   // Condition 1 (Human Only): disable paste in the rules textarea
   if (humanOnlyTextarea) {
@@ -633,4 +698,7 @@ window.addEventListener('DOMContentLoaded', () => {
       console.log('[Paste Prevention] Paste disabled in prompt textarea');
     });
   }
+
+  // Initialize submit button state
+  updateSubmitButtonState();
 });
