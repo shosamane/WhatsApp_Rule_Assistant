@@ -228,7 +228,7 @@ submitFinalBtn.addEventListener('click', async () => {
           <strong>Please click the link below to return to Prolific and complete your submission:</strong>
         </p>
         <p style="margin: 1rem 0;">
-          <a href="https://app.prolific.com/submissions/complete?cc=CCJ1SIAW"
+          <a href="https://app.prolific.com/submissions/complete?cc=CFZDBHVB"
              target="_blank"
              style="display: inline-block; background: #1565C0; color: white; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 1.1rem;">
             Complete Prolific Submission
