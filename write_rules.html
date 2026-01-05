@@ -91,6 +91,10 @@
       margin-bottom: 15px;
       color: #555;
       align-self: flex-start;
+      width: 100%;
+      max-width: 500px;
+      word-wrap: break-word;
+      line-height: 1.4;
     }
 
     .iframe-wrapper {
@@ -252,6 +256,37 @@
     .error-message.active {
       display: block;
     }
+
+    /* Additional responsive improvements */
+    @media (max-width: 600px) {
+      body {
+        padding: 10px;
+      }
+
+      h1 {
+        font-size: 20px;
+        margin-bottom: 15px;
+      }
+
+      .mock-chat-container h3 {
+        font-size: 14px;
+      }
+
+      .info-text {
+        font-size: 13px;
+      }
+
+      .generate-btn {
+        padding: 10px 20px;
+        font-size: 13px;
+      }
+
+      .prompt-input,
+      .rules-output {
+        font-size: 13px;
+        padding: 10px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -262,7 +297,7 @@
     <h2 style="font-size: 18px; margin-bottom: 15px; color: #555;">Instructions</h2>
     <p style="margin-bottom: 10px; line-height: 1.6;">On the left, you will see a mock WhatsApp group conversation from a family group. Please:</p>
     <ul style="margin-left: 20px; margin-bottom: 15px; line-height: 1.8;">
-      <li><strong>Scroll through the conversation</strong> as you would on your phone, from top to bottom.</li>
+      <li><strong>Please read the whole conversation by scrolling down.</strong> Scroll through the conversation as you would on your phone, from top to bottom.</li>
       <li><strong>Read all the messages carefully</strong> to understand the group dynamics, interactions, and any issues that may arise.</li>
       <li><strong>Imagine you are the admin</strong> of this WhatsApp group.</li>
       <li><strong>Think about what rules you would set</strong> to promote the well-being of the group, reduce potential conflicts, maintain respectful communication, and ensure a positive environment for all members.</li>
@@ -287,7 +322,7 @@
   <div class="content-container">
     <!-- Mock WhatsApp Chat -->
     <div class="mock-chat-container">
-      <h3>Family WhatsApp Group</h3>
+      <h3>Family WhatsApp Group -- scroll down to read through the whole conversation</h3>
       <div class="iframe-wrapper">
         <iframe
           id="whatsapp-iframe"
@@ -317,7 +352,7 @@
       <!-- Condition 2: Human + AI -->
       <div id="condition2-ui" class="rule-input-container active">
         <h3>Collaborate with AI</h3>
-        <p class="info-text" style="margin-bottom: 15px; line-height: 1.6;">The AI has access to all the messages in the WhatsApp conversation. You can ask the AI to help you generate rules based on what you want to achieve for the group. Describe your preferences, and the AI will suggest rules accordingly.</p>
+        <p class="info-text" style="margin-bottom: 15px; line-height: 1.6;">The AI has access to all the messages in the WhatsApp conversation. You can ask the AI to help you generate rules based on what you want to achieve for the group. Describe your preferences, and the AI will suggest rules accordingly. Every time you click the "Send to AI" button, the AI is going to write new content in the canvas below that you can edit. You can send instructions to AI as many times as you want.</p>
         <div class="error-message" id="error-message-c2"></div>
 
         <div class="prompt-input-group">
@@ -328,19 +363,19 @@
             placeholder="Example: Read the group conversation and generate rules that promote respectful communication and maintain group harmony..."></textarea>
         </div>
 
-        <button id="generate-btn-c2" class="generate-btn">Generate Rules</button>
+        <button id="generate-btn-c2" class="generate-btn">Send to AI</button>
         <div class="loading-indicator" id="loading-c2">Generating Rules -- wait a moment</div>
 
+        <p class="info-text" style="margin-top: 15px; margin-bottom: 15px; line-height: 1.6; background: #fffbea; padding: 12px; border-left: 4px solid #f59e0b; border-radius: 4px;"><strong>Important:</strong> Please feel free to edit the generated rules in the box below to match your preferences. You can adjust the tone, language, add or remove rules, or make any other changes. <strong>It is most important that you are fully satisfied with the final rules.</strong> The AI suggestions are just a starting point!</p>
+
         <div class="prompt-input-group">
-          <label for="ai-rules-c2">Generated Rules (editable):</label>
           <textarea
             id="ai-rules-c2"
             class="rules-output"
             placeholder="AI-generated rules will appear here. You can edit them after generation."></textarea>
         </div>
-        <p class="info-text" style="margin-bottom: 15px; line-height: 1.6; background: #fffbea; padding: 12px; border-left: 4px solid #f59e0b; border-radius: 4px;"><strong>Important:</strong> Please feel free to edit the generated rules in the box above to match your preferences. You can adjust the tone, language, add or remove rules, or make any other changes. <strong>It is most important that you are fully satisfied with the final rules.</strong> The AI suggestions are just a starting point!</p>
+
         <button id="submit-btn-c2" class="generate-btn" style="margin-top: 15px;">Submit</button>
-        <p class="info-text">You can refine your prompt and regenerate rules as many times as you want. Once you are satisfied with the rules, press Submit to continue.</p>
       </div>
 
     </div>

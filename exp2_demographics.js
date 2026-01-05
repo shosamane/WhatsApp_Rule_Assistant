@@ -180,18 +180,47 @@ submitFinalBtn.addEventListener('click', async () => {
 
     // Show completion message
     finalSubmissionMessage.hidden = false;
-    finalSubmissionMessage.innerHTML = `
-      <h3 style="color: #1565C0; margin-bottom: 1rem;">Thank you for completing the study!</h3>
-      ${completionCode ? `
-        <p style="font-size: 1.1rem; margin-bottom: 1rem;">
-          Your completion code is: <strong style="font-size: 1.3rem; color: #1565C0;">${completionCode}</strong>
+
+    // Different messages for different recruitment sources
+    if (recruitmentSource === 'prolific') {
+      // Prolific participants: show redirect link
+      finalSubmissionMessage.innerHTML = `
+        <h3 style="color: #1565C0; margin-bottom: 1rem;">Thank you for completing the study!</h3>
+        <p style="margin: 1rem 0;">Your responses have been submitted successfully.</p>
+        <p style="margin: 1rem 0; font-size: 1.1rem;">
+          <strong>Please click the link below to return to Prolific and complete your submission:</strong>
         </p>
-        <p style="margin-bottom: 1rem;">
-          Please copy this code and enter it in ${recruitmentSource === 'clickworker' ? 'Clickworker' : 'Prolific'} to receive your compensation.
+        <p style="margin: 1rem 0;">
+          <a href="https://app.prolific.com/submissions/complete?cc=CCJ1SIAW"
+             target="_blank"
+             style="display: inline-block; background: #1565C0; color: white; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 1.1rem;">
+            Complete Prolific Submission
+          </a>
         </p>
-      ` : ''}
-      <p>You may now close this window.</p>
-    `;
+        <p style="margin: 1rem 0; color: #666; font-size: 0.95rem;">
+          You must click this link to receive your payment.
+        </p>
+      `;
+    } else {
+      // Clickworker and Referral participants: show completion code
+      finalSubmissionMessage.innerHTML = `
+        <h3 style="color: #1565C0; margin-bottom: 1rem;">Thank you for completing the study!</h3>
+        ${completionCode ? `
+          <p style="font-size: 1.1rem; margin-bottom: 1rem;">
+            Your completion code is: <strong style="font-size: 1.3rem; color: #1565C0;">${completionCode}</strong>
+          </p>
+          <p style="margin-bottom: 1rem;">
+            Please copy this code and enter it in ${recruitmentSource === 'clickworker' ? 'Clickworker' : 'the platform you were recruited from'} to receive your compensation.
+          </p>
+          ${recruitmentSource === 'referral' ? `
+            <p style="margin-bottom: 1rem;">
+              If you were referred by the researchers, please email this code to <a href="mailto:sh1779@scarletmail.rutgers.edu" style="color: #1565C0;">sh1779@scarletmail.rutgers.edu</a> to process your payment.
+            </p>
+          ` : ''}
+        ` : ''}
+        <p>You may now close this window.</p>
+      `;
+    }
 
     // Hide the form
     document.getElementById('demographics-panel').querySelector('#randomizable-fields').style.display = 'none';
