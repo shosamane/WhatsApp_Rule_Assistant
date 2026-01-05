@@ -44,7 +44,17 @@ function assignWhatsAppVersion() {
 }
 
 // Initialize version on page load
-assignWhatsAppVersion();
+const whatsappVersion = assignWhatsAppVersion();
+
+// Set iframe src with version parameter
+window.addEventListener('DOMContentLoaded', () => {
+  const iframe = document.getElementById('whatsapp-iframe');
+  if (iframe) {
+    const version = sessionStorage.getItem('exp2_whatsapp_version') || '1';
+    iframe.src = `whatsapp-mock/index.html?version=${version}`;
+    console.log(`[write_rules] Set WhatsApp iframe to version ${version}`);
+  }
+});
 
 // WhatsApp Message Data - All 3 Versions
 // VERSION 1: Unknown Number → Political → Product
@@ -440,6 +450,11 @@ if (submitBtnC2) {
     errorMessageC2.classList.remove('active');
     rulesSubmitted = true;
     sessionStorage.setItem('exp2_final_rules', rules);
+    sessionStorage.setItem('exp2_timestamp_submit', new Date().toISOString());
+
+    // Save to database immediately when Submit is clicked
+    saveProgress('write_rules_submitted');
+
     updateContinueButton();
 
     // Visual feedback
@@ -462,6 +477,11 @@ if (submitBtnC1) {
 
     rulesSubmitted = true;
     sessionStorage.setItem('exp2_final_rules', rules);
+    sessionStorage.setItem('exp2_timestamp_submit', new Date().toISOString());
+
+    // Save to database immediately when Submit is clicked
+    saveProgress('write_rules_submitted');
+
     updateContinueButton();
 
     // Visual feedback
@@ -525,6 +545,7 @@ async function saveProgress(pageName) {
         generationHistory: currentCondition === '2' ? generatedRulesHistory : null
       },
       timestamps: {
+        writeRulesSubmitted: pageName === 'write_rules_submitted' ? new Date().toISOString() : (sessionStorage.getItem('exp2_timestamp_submit') || null),
         writeRulesComplete: pageName === 'write_rules_complete' ? new Date().toISOString() : null
       },
       updatedAt: new Date().toISOString(),

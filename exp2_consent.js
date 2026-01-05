@@ -39,6 +39,21 @@ let urlIdentifier = null;
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const codeParam = urlParams.get('code');
+    const newSession = urlParams.get('new');
+
+    // If 'new' parameter is present, clear all exp2 session data for a fresh start
+    if (newSession !== null) {
+      console.log('[Init] New session requested, clearing previous data');
+      const keysToRemove = [];
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key && key.startsWith('exp2_')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => sessionStorage.removeItem(key));
+    }
+
     if (codeParam) {
       urlIdentifier = codeParam;
       console.log('[Init] URL identifier found:', urlIdentifier);
