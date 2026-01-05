@@ -45,8 +45,8 @@
         margin-bottom: 20px;
       }
 
-      .rule-input-container {
-        order: 2; /* Rule input appears below */
+      .rule-input-wrapper {
+        order: 2; /* Rule input appears below WhatsApp mock */
       }
 
       /* Make iframe more visible on mobile */
@@ -315,16 +315,17 @@
     </div>
 
     <!-- Rule Input Section -->
-    <div>
+    <div class="rule-input-wrapper">
       <!-- Condition 1: Human Only -->
       <div id="condition1-ui" class="rule-input-container">
         <h3>Write Your Rules</h3>
         <p class="info-text" style="margin-bottom: 15px; line-height: 1.6;">Based on what you observed in the WhatsApp conversation, write the rules you would set for this group as an admin. Think about guidelines that would help maintain a healthy group environment.</p>
+        <div class="error-message" id="error-message-c1"></div>
         <textarea
           id="human-only-textarea"
           class="rules-output"
           placeholder="Write your rules here..."></textarea>
-        <button id="submit-btn-c1" class="generate-btn" style="margin-top: 15px;" title="">Submit and Continue</button>
+        <button id="submit-btn-c1" class="generate-btn" style="margin-top: 15px;">Submit and Continue</button>
         <p class="info-text">Once you are satisfied with your rules, press Submit to continue.</p>
       </div>
 
@@ -354,7 +355,7 @@
             placeholder="AI-generated rules will appear here. You can edit them after generation."></textarea>
         </div>
 
-        <button id="submit-btn-c2" class="generate-btn" style="margin-top: 15px;" title="">Submit and Continue</button>
+        <button id="submit-btn-c2" class="generate-btn" style="margin-top: 15px;">Submit and Continue</button>
       </div>
 
     </div>

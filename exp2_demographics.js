@@ -25,8 +25,10 @@ const demoEducationFinal = document.getElementById('demo-education-final');
 const demoWaFrequencyFinal = document.getElementById('demo-wa-frequency-final');
 const demoWaAdminGroupsFinal = document.getElementById('demo-wa-admin-groups-final');
 const demoAdminDurationFinal = document.getElementById('demo-admin-duration-final');
-const demoWritingConfidenceFinal = document.getElementById('demo-writing-confidence-final');
-const demoExplanationSkillFinal = document.getElementById('demo-explanation-skill-final');
+const demoRulesConfidenceFinal = document.getElementById('demo-rules-confidence-final');
+const demoRulesControlFinal = document.getElementById('demo-rules-control-final');
+const demoRulesEaseFinal = document.getElementById('demo-rules-ease-final');
+const demoRulesSatisfactionFinal = document.getElementById('demo-rules-satisfaction-final');
 const demoAttentionCheckFinal = document.getElementById('demo-attention-check-final');
 const submitFinalBtn = document.getElementById('submit-final');
 const backBtn = document.getElementById('back-btn');
@@ -34,6 +36,36 @@ const finalSubmissionMessage = document.getElementById('final-submission-message
 
 // Store the correct attention check answer
 let correctAttentionCheckAnswer = null;
+
+// Update question text based on condition (add "with the help of AI" for condition 2)
+function updateQuestionTextForCondition() {
+  const condition = sessionStorage.getItem('exp2_condition');
+
+  // If condition 2 (Human + AI), add "with the help of AI" to question text
+  if (condition === '2') {
+    const rulesConfidenceText = document.getElementById('rules-confidence-text');
+    const rulesControlText = document.getElementById('rules-control-text');
+    const rulesEaseText = document.getElementById('rules-ease-text');
+    const rulesSatisfactionText = document.getElementById('rules-satisfaction-text');
+
+    if (rulesConfidenceText) {
+      rulesConfidenceText.textContent = 'I feel confident that the rules I wrote with the help of AI is appropriate for the group.';
+    }
+    if (rulesControlText) {
+      rulesControlText.textContent = 'I felt I was in control of what rules I wanted to write with the help of AI.';
+    }
+    if (rulesEaseText) {
+      rulesEaseText.textContent = 'I found it easy to write rules with the help of AI.';
+    }
+    if (rulesSatisfactionText) {
+      rulesSatisfactionText.textContent = 'I feel satisfied with the set of rules I wrote with the help of AI.';
+    }
+
+    console.log('[Demographics] Updated question text for Condition 2 (Human + AI)');
+  } else {
+    console.log('[Demographics] Using default question text for Condition 1 (Human Only)');
+  }
+}
 
 // Initialize demographics randomization (attention check and field order)
 function initializeDemographicsRandomization() {
@@ -107,7 +139,8 @@ function validateFinalDemographics() {
   if (!demoAgeFinal || !demoGenderFinal || !demoLocationFinal ||
       !demoEducationFinal || !demoWaFrequencyFinal ||
       !demoWaAdminGroupsFinal || !demoAdminDurationFinal ||
-      !demoWritingConfidenceFinal || !demoExplanationSkillFinal || !demoAttentionCheckFinal) {
+      !demoRulesConfidenceFinal || !demoRulesControlFinal ||
+      !demoRulesEaseFinal || !demoRulesSatisfactionFinal || !demoAttentionCheckFinal) {
     return false;
   }
 
@@ -118,12 +151,15 @@ function validateFinalDemographics() {
   const waFreq = demoWaFrequencyFinal.value;
   const waAdminGroups = demoWaAdminGroupsFinal.value;
   const adminDur = demoAdminDurationFinal.value;
-  const writingConf = demoWritingConfidenceFinal.value;
-  const explainSkill = demoExplanationSkillFinal.value;
+  const rulesConf = demoRulesConfidenceFinal.value;
+  const rulesControl = demoRulesControlFinal.value;
+  const rulesEase = demoRulesEaseFinal.value;
+  const rulesSat = demoRulesSatisfactionFinal.value;
   const attCheck = demoAttentionCheckFinal.value;
 
   return age && gender && location && education && waFreq &&
-         waAdminGroups && adminDur && writingConf && explainSkill && attCheck;
+         waAdminGroups && adminDur && rulesConf && rulesControl &&
+         rulesEase && rulesSat && attCheck;
 }
 
 // Enable/disable submit button based on validation
@@ -134,7 +170,8 @@ function updateSubmitButton() {
 // Add input listeners
 [demoAgeFinal, demoGenderFinal, demoLocationFinal, demoEducationFinal,
  demoWaFrequencyFinal, demoWaAdminGroupsFinal, demoAdminDurationFinal,
- demoWritingConfidenceFinal, demoExplanationSkillFinal, demoAttentionCheckFinal].forEach(el => {
+ demoRulesConfidenceFinal, demoRulesControlFinal, demoRulesEaseFinal,
+ demoRulesSatisfactionFinal, demoAttentionCheckFinal].forEach(el => {
   if (el) {
     el.addEventListener('input', updateSubmitButton);
     el.addEventListener('change', updateSubmitButton);
@@ -313,8 +350,10 @@ async function saveProgress(pageName, completionCode = null, attentionCheckPasse
         whatsappFrequency: demoWaFrequencyFinal.value,
         whatsappAdminGroups: demoWaAdminGroupsFinal.value,
         adminDuration: demoAdminDurationFinal.value,
-        writingConfidence: demoWritingConfidenceFinal.value,
-        explanationSkill: demoExplanationSkillFinal.value,
+        rulesConfidence: demoRulesConfidenceFinal.value,
+        rulesControl: demoRulesControlFinal.value,
+        rulesEase: demoRulesEaseFinal.value,
+        rulesSatisfaction: demoRulesSatisfactionFinal.value,
         attentionCheck: demoAttentionCheckFinal.value,
         attentionCheckExpected: correctAttentionCheckAnswer,
         attentionCheckPassed: attentionCheckPassed
@@ -348,3 +387,6 @@ async function saveProgress(pageName, completionCode = null, attentionCheckPasse
 
 // Initialize randomization on page load
 initializeDemographicsRandomization();
+
+// Update question text based on condition
+updateQuestionTextForCondition();

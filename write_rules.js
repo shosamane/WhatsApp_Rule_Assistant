@@ -329,6 +329,7 @@ const userPromptInput = document.getElementById('user-prompt');
 const generateBtnC2 = document.getElementById('generate-btn-c2');
 const submitBtnC2 = document.getElementById('submit-btn-c2');
 const loadingC2 = document.getElementById('loading-c2');
+const errorMessageC1 = document.getElementById('error-message-c1');
 const errorMessageC2 = document.getElementById('error-message-c2');
 const aiRulesC2 = document.getElementById('ai-rules-c2');
 // Buttons removed - Submit button now handles everything
@@ -375,38 +376,25 @@ function canSubmit() {
   return { hasScrolled, hasRules, canSubmit: hasScrolled && hasRules };
 }
 
-// Update submit button state and tooltip
+// Update submit button state (visual styling only, button remains clickable)
 function updateSubmitButtonState() {
   const submitBtn = currentCondition === '1' ? submitBtnC1 : submitBtnC2;
   if (!submitBtn) return;
 
   const { hasScrolled, hasRules, canSubmit: canSubmitNow } = canSubmit();
 
-  submitBtn.disabled = !canSubmitNow;
+  // Keep button enabled so clicks work, but style it to look disabled
+  submitBtn.disabled = false;
 
-  // Set tooltip message based on what's missing
-  let tooltipMessage = '';
-  if (!hasScrolled && !hasRules) {
-    tooltipMessage = 'Please scroll through the entire conversation and write rules before submitting.';
-  } else if (!hasScrolled) {
-    tooltipMessage = 'Please scroll through the entire conversation before submitting.';
-  } else if (!hasRules) {
-    tooltipMessage = currentCondition === '1'
-      ? 'Please write rules before submitting.'
-      : 'Please generate or write rules before submitting.';
-  } else {
-    tooltipMessage = 'Click to submit and continue to the next page.';
-  }
-
-  submitBtn.setAttribute('title', tooltipMessage);
-
-  // Update styling for disabled state
+  // Update styling based on whether user can submit
   if (!canSubmitNow) {
     submitBtn.style.opacity = '0.5';
     submitBtn.style.cursor = 'not-allowed';
+    submitBtn.style.background = '#ccc';
   } else {
     submitBtn.style.opacity = '1';
     submitBtn.style.cursor = 'pointer';
+    submitBtn.style.background = '#25D366';
   }
 }
 
@@ -414,6 +402,8 @@ function updateSubmitButtonState() {
 if (humanOnlyTextarea) {
   humanOnlyTextarea.addEventListener('input', () => {
     rulesSubmitted = false;
+    // Clear error message when user starts typing
+    if (errorMessageC1) errorMessageC1.classList.remove('active');
     updateSubmitButtonState();
   });
 }
@@ -421,12 +411,16 @@ if (humanOnlyTextarea) {
 if (aiRulesC2) {
   aiRulesC2.addEventListener('input', () => {
     rulesSubmitted = false;
+    // Clear error message when user starts typing
+    if (errorMessageC2) errorMessageC2.classList.remove('active');
     updateSubmitButtonState();
   });
 }
 
 if (userPromptInput) {
   userPromptInput.addEventListener('input', () => {
+    // Clear error message when user starts typing
+    if (errorMessageC2) errorMessageC2.classList.remove('active');
     updateSubmitButtonState();
   });
 }
@@ -524,9 +518,13 @@ if (submitBtnC2) {
         errorMsg = 'Please generate or write rules before submitting.';
       }
 
+      // Show error message visibly
       errorMessageC2.textContent = errorMsg;
       errorMessageC2.classList.add('active');
-      alert(errorMsg);
+
+      // Scroll to error message so user sees it
+      errorMessageC2.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
       return;
     }
 
@@ -569,11 +567,18 @@ if (submitBtnC1) {
         errorMsg = 'Please write rules before submitting.';
       }
 
-      alert(errorMsg);
+      // Show error message visibly
+      errorMessageC1.textContent = errorMsg;
+      errorMessageC1.classList.add('active');
+
+      // Scroll to error message so user sees it
+      errorMessageC1.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
       return;
     }
 
     const rules = humanOnlyTextarea.value.trim();
+    errorMessageC1.classList.remove('active');
     sessionStorage.setItem('exp2_final_rules', rules);
     sessionStorage.setItem('exp2_timestamp_submit', new Date().toISOString());
 
