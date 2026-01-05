@@ -613,4 +613,22 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   updateContinueButton();
+
+  // Disable paste in specific textareas
+  // Condition 1 (Human Only): disable paste in the rules textarea
+  if (humanOnlyTextarea) {
+    humanOnlyTextarea.addEventListener('paste', (e) => {
+      e.preventDefault();
+      console.log('[Paste Prevention] Paste disabled in Human Only textarea');
+    });
+  }
+
+  // Condition 2 (Human + AI): disable paste in the prompt textarea only
+  // (paste is allowed in ai-rules-c2 for editing)
+  if (userPromptInput) {
+    userPromptInput.addEventListener('paste', (e) => {
+      e.preventDefault();
+      console.log('[Paste Prevention] Paste disabled in prompt textarea');
+    });
+  }
 });
