@@ -362,18 +362,37 @@ function assignRandomCondition() {
   return randomCondition;
 }
 
-// Check if user can submit (has scrolled to bottom AND written rules)
+// Check if user can submit
 function canSubmit() {
   const hasScrolled = sessionStorage.getItem('exp2_scrolled_to_bottom') === 'true';
 
   let hasRules = false;
+  let hasEnoughWords = false;
+  let hasPromptedAI = false;
+
   if (currentCondition === '1') {
-    hasRules = humanOnlyTextarea && humanOnlyTextarea.value.trim().length > 0;
+    // Human Only: Check for at least 50 words
+    const text = humanOnlyTextarea ? humanOnlyTextarea.value.trim() : '';
+    const wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
+    hasRules = text.length > 0;
+    hasEnoughWords = wordCount >= 50;
   } else {
-    hasRules = aiRulesC2 && aiRulesC2.value.trim().length > 0;
+    // Human + AI: Only check if user has prompted AI at least once
+    hasPromptedAI = sessionStorage.getItem('exp2_generated_rules') !== null;
+    hasRules = hasPromptedAI; // For condition 2, having prompted AI is sufficient
   }
 
-  return { hasScrolled, hasRules, canSubmit: hasScrolled && hasRules };
+  const canSubmitNow = currentCondition === '1'
+    ? (hasScrolled && hasEnoughWords)
+    : (hasScrolled && hasPromptedAI);
+
+  return {
+    hasScrolled,
+    hasRules,
+    hasEnoughWords,
+    hasPromptedAI,
+    canSubmit: canSubmitNow
+  };
 }
 
 // Update submit button state (visual styling only, button remains clickable)
@@ -504,18 +523,18 @@ generateBtnC2.addEventListener('click', async () => {
 // Submit button for Condition 2
 if (submitBtnC2) {
   submitBtnC2.addEventListener('click', () => {
-    const { hasScrolled, hasRules, canSubmit: canSubmitNow } = canSubmit();
+    const { hasScrolled, hasPromptedAI, canSubmit: canSubmitNow } = canSubmit();
 
     // Check all conditions
     if (!canSubmitNow) {
       // Show specific error message
       let errorMsg = '';
-      if (!hasScrolled && !hasRules) {
-        errorMsg = 'Please scroll through the entire conversation and generate/write rules before submitting.';
+      if (!hasScrolled && !hasPromptedAI) {
+        errorMsg = 'Please scroll through the entire conversation and send at least one prompt to the AI before submitting.';
       } else if (!hasScrolled) {
         errorMsg = 'Please scroll through the entire conversation before submitting.';
-      } else if (!hasRules) {
-        errorMsg = 'Please generate or write rules before submitting.';
+      } else if (!hasPromptedAI) {
+        errorMsg = 'Please send at least one prompt to the AI to generate rules.';
       }
 
       // Show error message visibly
@@ -553,18 +572,18 @@ if (submitBtnC2) {
 const submitBtnC1 = document.getElementById('submit-btn-c1');
 if (submitBtnC1) {
   submitBtnC1.addEventListener('click', () => {
-    const { hasScrolled, hasRules, canSubmit: canSubmitNow } = canSubmit();
+    const { hasScrolled, hasEnoughWords, canSubmit: canSubmitNow } = canSubmit();
 
     // Check all conditions
     if (!canSubmitNow) {
       // Show specific error message
       let errorMsg = '';
-      if (!hasScrolled && !hasRules) {
-        errorMsg = 'Please scroll through the entire conversation and write rules before submitting.';
+      if (!hasScrolled && !hasEnoughWords) {
+        errorMsg = 'Please scroll through the entire conversation and write more substantively before submitting.';
       } else if (!hasScrolled) {
         errorMsg = 'Please scroll through the entire conversation before submitting.';
-      } else if (!hasRules) {
-        errorMsg = 'Please write rules before submitting.';
+      } else if (!hasEnoughWords) {
+        errorMsg = 'Please write more substantively.';
       }
 
       // Show error message visibly

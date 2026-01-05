@@ -189,15 +189,35 @@
       font-weight: 600;
       cursor: pointer;
       margin-bottom: 15px;
+      transition: all 0.2s ease;
     }
 
     .generate-btn:hover {
       background: #20BA5A;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
     }
 
     .generate-btn:disabled {
       background: #ccc;
       cursor: not-allowed;
+    }
+
+    /* Make Submit buttons more prominent */
+    #submit-btn-c1,
+    #submit-btn-c2 {
+      margin-top: 25px;
+      padding: 14px 32px;
+      font-size: 16px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      min-width: 200px;
+    }
+
+    #submit-btn-c1:hover:not([disabled]),
+    #submit-btn-c2:hover:not([disabled]) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
     }
 
     .rules-output {
@@ -325,7 +345,7 @@
           id="human-only-textarea"
           class="rules-output"
           placeholder="Write your rules here..."></textarea>
-        <button id="submit-btn-c1" class="generate-btn" style="margin-top: 15px;">Submit and Continue</button>
+        <button id="submit-btn-c1" class="generate-btn">Submit and Continue</button>
         <p class="info-text">Once you are satisfied with your rules, press Submit to continue.</p>
       </div>
 
@@ -355,7 +375,7 @@
             placeholder="AI-generated rules will appear here. You can edit them after generation."></textarea>
         </div>
 
-        <button id="submit-btn-c2" class="generate-btn" style="margin-top: 15px;">Submit and Continue</button>
+        <button id="submit-btn-c2" class="generate-btn">Submit and Continue</button>
       </div>
 
     </div>
