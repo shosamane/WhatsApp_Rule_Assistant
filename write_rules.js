@@ -46,13 +46,23 @@ function assignWhatsAppVersion() {
 // Initialize version on page load
 const whatsappVersion = assignWhatsAppVersion();
 
-// Set iframe src with version parameter
-window.addEventListener('DOMContentLoaded', () => {
-  const iframe = document.getElementById('whatsapp-iframe');
-  if (iframe) {
-    const version = sessionStorage.getItem('exp2_whatsapp_version') || '1';
-    iframe.src = `whatsapp-mock/index.html?version=${version}`;
-    console.log(`[write_rules] Set WhatsApp iframe to version ${version}`);
+// Listen for version selection from WhatsApp mock iframe
+window.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'whatsapp_version_selected') {
+    const version = event.data.version;
+    console.log(`[write_rules] WhatsApp mock selected version: ${version}`);
+
+    // Store the version that was actually displayed
+    sessionStorage.setItem('exp2_whatsapp_version', version.toString());
+
+    const versionLabels = {
+      1: 'Unknown Number → Political → Product',
+      2: 'Political → Product → Unknown Number',
+      3: 'Product → Unknown Number → Political'
+    };
+    sessionStorage.setItem('exp2_whatsapp_version_label', versionLabels[version]);
+
+    console.log(`[write_rules] Stored version ${version}: ${versionLabels[version]}`);
   }
 });
 
