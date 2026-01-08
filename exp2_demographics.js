@@ -360,6 +360,10 @@ async function saveProgress(pageName, completionCode = null, attentionCheckPasse
       },
       completionCode: completionCode,
       timestamps: {
+        consentComplete: sessionStorage.getItem('exp2_consent_timestamp'),
+        recruitmentComplete: sessionStorage.getItem('exp2_recruitment_timestamp'),
+        writeRulesStart: sessionStorage.getItem('exp2_write_rules_start'),
+        writeRulesComplete: sessionStorage.getItem('exp2_timestamp_submit'),
         demographicsComplete: new Date().toISOString()
       },
       updatedAt: new Date().toISOString(),

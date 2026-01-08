@@ -681,8 +681,10 @@ async function saveProgress(pageName) {
         generationHistory: currentCondition === '2' ? generatedRulesHistory : null
       },
       timestamps: {
-        writeRulesSubmitted: pageName === 'write_rules_submitted' ? new Date().toISOString() : (sessionStorage.getItem('exp2_timestamp_submit') || null),
-        writeRulesComplete: pageName === 'write_rules_complete' ? new Date().toISOString() : null
+        consentComplete: sessionStorage.getItem('exp2_consent_timestamp'),
+        recruitmentComplete: sessionStorage.getItem('exp2_recruitment_timestamp'),
+        writeRulesStart: sessionStorage.getItem('exp2_write_rules_start'),
+        writeRulesComplete: pageName === 'write_rules_complete' ? new Date().toISOString() : sessionStorage.getItem('exp2_timestamp_submit')
       },
       updatedAt: new Date().toISOString(),
       progressStatus: pageName
@@ -709,6 +711,11 @@ async function saveProgress(pageName) {
 
 // Load saved data on page load (if returning from demographics)
 window.addEventListener('DOMContentLoaded', () => {
+  // Record when user starts the write_rules page (only once)
+  if (!sessionStorage.getItem('exp2_write_rules_start')) {
+    sessionStorage.setItem('exp2_write_rules_start', new Date().toISOString());
+  }
+
   const savedCondition = sessionStorage.getItem('exp2_condition');
   if (savedCondition) {
     // User has already been assigned a condition, restore it

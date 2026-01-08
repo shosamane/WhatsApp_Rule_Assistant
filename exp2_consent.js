@@ -170,6 +170,9 @@ continueBtn.addEventListener('click', () => {
     sessionStorage.setItem('exp2_url_identifier', urlIdentifier);
   }
 
+  // Save recruitment completion timestamp
+  sessionStorage.setItem('exp2_recruitment_timestamp', new Date().toISOString());
+
   // Save to backend
   saveProgress('recruitment_complete').then(() => {
     // Navigate to page 2
@@ -196,6 +199,7 @@ async function saveProgress(pageName) {
       } : null,
       timestamps: {
         consentComplete: consentGiven ? new Date().toISOString() : null,
+        recruitmentComplete: (pageName === 'recruitment_complete') ? new Date().toISOString() : sessionStorage.getItem('exp2_recruitment_timestamp'),
       },
       updatedAt: new Date().toISOString(),
       progressStatus: pageName
