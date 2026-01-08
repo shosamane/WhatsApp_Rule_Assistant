@@ -520,7 +520,7 @@ ${messagesContext}
 
 User's request: ${prompt}
 
-Please provide 3-5 clear, actionable rules based on the user's request and the conversation context above. Format the rules as a numbered list. Consider the group dynamics, issues that arose, and what guidelines would help maintain a healthy group environment.`;
+Format the rules as a list and write succinctly.`;
 
   const resp = await fetch('/webhook3/api/generate', {
     method: 'POST',
