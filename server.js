@@ -251,6 +251,123 @@ app.post(`${base}/api/store`, async (req, res) => {
   }
 });
 
+// ---- store Experiment2B submission ----
+app.post(`${base}/api/store-exp2b`, async (req, res) => {
+  try {
+    const payload = req.body || {};
+    // Basic sanity: require a sessionId
+    if (!payload.sessionId) return res.status(400).json({ error: 'missing_sessionId' });
+
+    const sessionId = payload.sessionId;
+    const now = new Date().toISOString();
+
+    // Set timestamps
+    if (!payload.createdAt) payload.createdAt = now;
+    payload.updatedAt = now;
+    payload.serverReceivedAt = now;
+    payload.remote = { ip: req.ip };
+
+    const client = await getMongo();
+    const db = client.db(mongoDbName);
+    const coll = db.collection('Experiment2B');
+
+    console.log(`[store-exp2b] Saving to Experiment2B collection, sessionId: ${sessionId}`);
+
+    // Extract createdAt to avoid conflict between $set and $setOnInsert
+    const { createdAt, ...updateFields } = payload;
+
+    // Use updateOne with upsert to update existing document or create new one
+    const result = await coll.updateOne(
+      { sessionId: sessionId },
+      {
+        $set: updateFields,
+        $setOnInsert: { createdAt: createdAt || now }
+      },
+      { upsert: true }
+    );
+
+    console.log(`[store-exp2b] Result - matched: ${result.matchedCount}, modified: ${result.modifiedCount}, upserted: ${result.upsertedCount}`);
+
+    return res.json({
+      ok: true,
+      sessionId: sessionId,
+      collection: 'Experiment2B',
+      matched: result.matchedCount,
+      modified: result.modifiedCount,
+      upserted: result.upsertedCount
+    });
+  } catch (err) {
+    console.error('store-exp2b error', err);
+    if (/mongodb driver not installed/i.test(String(err))) {
+      return res.status(500).json({ error: 'driver_missing', hint: 'Install with: npm install mongodb' });
+    }
+    return res.status(500).json({ error: 'store_failed' });
+  }
+});
+
+// ---- get rules for comparison (Experiment2B) ----
+app.post(`${base}/api/get-rules-for-comparison`, async (req, res) => {
+  try {
+    const { participantId } = req.body || {};
+
+    if (!participantId) {
+      return res.status(400).json({ error: 'missing_participantId' });
+    }
+
+    const client = await getMongo();
+    const db = client.db(mongoDbName);
+    const coll = db.collection('Experiment2');
+
+    console.log(`[get-rules-for-comparison] Fetching rules for participantId: ${participantId}`);
+
+    // Fetch all completed submissions from Experiment2, excluding the current participant
+    const allSubmissions = await coll.find({
+      'recruitment.participantId': { $ne: participantId },
+      'progressStatus': 'demographics_complete',
+      'rules.finalRules': { $exists: true, $ne: null, $ne: '' }
+    }).toArray();
+
+    console.log(`[get-rules-for-comparison] Found ${allSubmissions.length} total submissions`);
+
+    // Separate into condition 1 and condition 2
+    const condition1Rules = [];
+    const condition2Rules = [];
+
+    for (const submission of allSubmissions) {
+      const condition = submission.condition;
+      const finalRules = submission.rules?.finalRules;
+      const sessionId = submission.sessionId;
+
+      if (!finalRules || !sessionId) continue;
+
+      const ruleObj = {
+        sessionId: sessionId,
+        condition: condition,
+        text: finalRules
+      };
+
+      if (condition === '1') {
+        condition1Rules.push(ruleObj);
+      } else if (condition === '2') {
+        condition2Rules.push(ruleObj);
+      }
+    }
+
+    console.log(`[get-rules-for-comparison] C1 rules: ${condition1Rules.length}, C2 rules: ${condition2Rules.length}`);
+
+    return res.json({
+      condition1: condition1Rules,
+      condition2: condition2Rules
+    });
+  } catch (err) {
+    console.error('get-rules-for-comparison error', err);
+    if (/mongodb driver not installed/i.test(String(err))) {
+      return res.status(500).json({ error: 'driver_missing', hint: 'Install with: npm install mongodb' });
+    }
+    return res.status(500).json({ error: 'fetch_failed' });
+  }
+});
+
 // ---- SPA fallback (after API route) ----
 app.use(base, (_req, res) => {
   res.sendFile(path.join(root, "index.html"));

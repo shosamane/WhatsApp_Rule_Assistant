@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Rules Comparison Study - Consent</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="container">
+    <!-- Consent Panel -->
+    <section class="panel" id="consent-panel">
+      <!-- University Logos -->
+      <div class="logo-header">
+        <img src="logos/cornell_logo_simple_b31b1b.png" alt="Cornell University" class="university-logo" />
+        <img src="logos/RNB_H_RED_RGB.png" alt="Rutgers University" class="university-logo" />
+      </div>
+
+      <p>This is an academic study conducted by researchers at Cornell University and Rutgers University.</p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0;"><strong>Purpose:</strong></h4>
+      <p>In this study, we examine the quality of rules created for WhatsApp groups with and without AI assistance.</p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0;"><strong>Study Procedure:</strong></h4>
+      <p>If you agree to participate, you will need to complete an 8-12 minute online task:</p>
+      <p>In this task, you will see 10 pairs of rules written by other participants for the same WhatsApp family group chat you read earlier.</p>
+      <p><strong>For each pair, you'll compare them on four aspects:</strong></p>
+      <ul>
+        <li><strong>Clarity:</strong> Which rules are easier to understand and less ambiguous?</li>
+        <li><strong>Contextual Fit:</strong> Which rules better address the actual problems that occurred in the chat (the political argument, the unknown number, profanity, product spam)?</li>
+        <li><strong>Enforceability:</strong> As a group admin, which rules would make it easier to identify violations and take action?</li>
+        <li><strong>Perceived Legitimacy:</strong> Which rules would you be more willing to follow if they were posted in your family WhatsApp group?</li>
+      </ul>
+      <p><strong>Note:</strong> Neither set of rules is your own. Choose based on your honest judgment. It's okay to select "Equal" if you genuinely can't decide.</p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0;"><strong>Eligibility:</strong></h4>
+      <p>You must have completed the previous WhatsApp rule-writing study to participate in this follow-up task.</p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0;"><strong>Risks:</strong></h4>
+      <p>We expect minimal risk from your participation in this study. If you feel uncomfortable at any time, you can withdraw.</p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0;"><strong>Benefits</strong></h4>
+      <p>No direct benefits. Your participation potentially helps improve WhatsApp group features.</p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0;"><strong>Compensation</strong></h4>
+      <p>You will receive $3.00 USD (~270 INR) via Prolific/Clickworker if you complete the study.</p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0;"><strong>Confidentiality</strong></h4>
+      <p>Your identity and data are protected. We will only collect your Prolific/Clickworker ID to process compensation. All data will be encrypted and accessed by the research team only.</p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0;"><strong>Voluntary participation</strong></h4>
+      <p>Participation is voluntary. You may withdraw anytime by closing your browser. At this moment, we can only compensate those who complete the whole study.</p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0;"><strong>Contact</strong></h4>
+      <p>If you have any questions regarding the study or face any issue during the study, please email: Sudhamshu Hosamane [sh1779@scarletmail.rutgers.edu] or Farhana Shahid [fs468@cornell.edu]</p>
+      <p>If you have any questions about your rights as a participant in this study, please contact: IRBOffice@research.rutgers.edu or <a href="mailto:irbhp@cornell.edu">irbhp@cornell.edu</a></p>
+
+      <h4 style="margin-top: 1.5rem; margin-bottom: 0;"><strong>Consent:</strong></h4>
+      <p>I confirm that:</p>
+      <ul>
+        <li>I have read this form and understand the study</li>
+        <li>I am 18 years or older</li>
+        <li>I understand participation is voluntary and I can withdraw anytime</li>
+        <li>I understand my data will be anonymized and kept confidential</li>
+      </ul>
+
+      <div class="consent-buttons">
+        <button id="consent-agree-btn" class="primary">I AGREE TO PARTICIPATE</button>
+        <button id="consent-decline-btn" class="primary outline" style="background: transparent; color: var(--error); border-color: var(--error);">I DO NOT WISH TO PARTICIPATE</button>
+      </div>
+    </section>
+
+    <!-- Recruitment Info Panel (shown after consent) -->
+    <section class="panel" id="recruitment-panel" hidden>
+      <h2>Before We Begin</h2>
+
+      <!-- Recruitment Source Selection -->
+      <div class="field" style="margin-bottom: 1.5rem;">
+        <span>From which platform were you recruited for this study?</span>
+        <div class="options" style="margin-top: 0.5rem;">
+          <label style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="radio" name="recruitment-source" value="clickworker" />
+            <span>Clickworker</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="radio" name="recruitment-source" value="prolific" />
+            <span>Prolific</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="radio" name="recruitment-source" value="referral" />
+            <span>I was referred by researchers</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="field" id="source-id-field" hidden style="margin-bottom: 1.5rem;">
+        <span id="source-id-label">Your Participant ID</span>
+        <input id="source-id" type="text" placeholder="Enter your ID" style="width: 100%; padding: 0.65rem 0.75rem; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: inherit; font: inherit;" />
+        <p class="tip" style="color: var(--error); margin-top: 0.5rem;">
+          <strong>Important:</strong> Please use the same ID you used in the previous WhatsApp rule-writing study. This allows us to link your responses.
+        </p>
+      </div>
+
+      <button id="continue-btn" class="primary" disabled>Continue to Study</button>
+    </section>
+  </main>
+
+  <script src="exp2b_consent.js"></script>
+</body>
+</html>

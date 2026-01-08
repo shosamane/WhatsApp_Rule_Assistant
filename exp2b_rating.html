@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Rules Comparison</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-indicator {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .instruction-text {
+      font-size: 14px;
+      color: #666;
+      text-align: center;
+      margin-bottom: 15px;
+      line-height: 1.6;
+    }
+
+    .view-chat-btn {
+      background: #25D366;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .view-chat-btn:hover {
+      background: #20BA5A;
+    }
+
+    .comparison-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    @media (max-width: 768px) {
+      .comparison-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .rules-panel {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .rules-panel h3 {
+      font-size: 20px;
+      margin-bottom: 15px;
+      color: #1565C0;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .rules-text {
+      white-space: pre-wrap;
+      line-height: 1.8;
+      color: #333;
+      font-size: 15px;
+      min-height: 200px;
+      max-height: 500px;
+      overflow-y: auto;
+      padding: 10px;
+      background: #f9f9f9;
+      border-radius: 4px;
+    }
+
+    .rating-section {
+      background: white;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    .rating-question {
+      margin-bottom: 25px;
+    }
+
+    .question-label {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .question-description {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 12px;
+      font-style: italic;
+    }
+
+    .rating-options {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .rating-option {
+      flex: 1;
+      min-width: 100px;
+    }
+
+    .rating-option input[type="radio"] {
+      display: none;
+    }
+
+    .rating-option label {
+      display: block;
+      padding: 12px 8px;
+      text-align: center;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+      background: white;
+      line-height: 1.3;
+    }
+
+    .rating-option input[type="radio"]:checked + label {
+      background: #1565C0;
+      color: white;
+      border-color: #1565C0;
+      font-weight: 600;
+    }
+
+    .rating-option label:hover {
+      border-color: #1565C0;
+      transform: translateY(-2px);
+      box-shadow: 0 2px 8px rgba(21, 101, 192, 0.2);
+    }
+
+    .next-btn {
+      background: #1565C0;
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: block;
+      margin: 0 auto;
+      min-width: 200px;
+    }
+
+    .next-btn:hover {
+      background: #0d47a1;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(21, 101, 192, 0.4);
+    }
+
+    .next-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .error-message {
+      background: #fee;
+      color: #c33;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      text-align: center;
+      display: none;
+    }
+
+    .error-message.active {
+      display: block;
+    }
+
+    /* WhatsApp Drawer */
+    .whatsapp-drawer {
+      position: fixed;
+      top: 0;
+      right: -100%;
+      width: 600px;
+      max-width: 90vw;
+      height: 100vh;
+      background: white;
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+      transition: right 0.3s ease;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .whatsapp-drawer.open {
+      right: 0;
+    }
+
+    .drawer-header {
+      padding: 20px;
+      background: #075E54;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .drawer-header h3 {
+      font-size: 18px;
+      margin: 0;
+    }
+
+    .close-drawer-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 28px;
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .drawer-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .drawer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      z-index: 999;
+    }
+
+    .drawer-overlay.active {
+      display: block;
+    }
+
+    @media (max-width: 768px) {
+      .rating-options {
+        flex-direction: column;
+      }
+
+      .rating-option {
+        min-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="progress-indicator" id="progress-indicator">Comparison 1 of 10</div>
+    <p class="instruction-text">
+      Compare the two sets of rules below and rate them on four aspects.
+      You can <strong>view the WhatsApp conversation</strong> at any time for reference.
+    </p>
+    <button class="view-chat-btn" id="view-chat-btn">View WhatsApp Conversation</button>
+  </div>
+
+  <div class="comparison-container">
+    <div class="rules-panel">
+      <h3>RULES A</h3>
+      <div class="rules-text" id="rules-a-text">Loading...</div>
+    </div>
+    <div class="rules-panel">
+      <h3>RULES B</h3>
+      <div class="rules-text" id="rules-b-text">Loading...</div>
+    </div>
+  </div>
+
+  <div class="rating-section">
+    <h2 style="text-align: center; margin-bottom: 30px; color: #333;">Rate the Rules</h2>
+
+    <div class="error-message" id="error-message"></div>
+
+    <!-- Clarity -->
+    <div class="rating-question">
+      <label class="question-label">CLARITY</label>
+      <p class="question-description">Which rules are easier to understand and less ambiguous?</p>
+      <div class="rating-options">
+        <div class="rating-option">
+          <input type="radio" id="clarity-a-much" name="clarity" value="A_much_better">
+          <label for="clarity-a-much">A much<br>better</label>
+        </div>
+        <div class="rating-option">
+          <input type="radio" id="clarity-a-slight" name="clarity" value="A_slightly_better">
+          <label for="clarity-a-slight">A slightly<br>better</label>
+        </div>
+        <div class="rating-option">
+          <input type="radio" id="clarity-equal" name="clarity" value="Equal">
+          <label for="clarity-equal">Equal</label>
+        </div>
+        <div class="rating-option">
+          <input type="radio" id="clarity-b-slight" name="clarity" value="B_slightly_better">
+          <label for="clarity-b-slight">B slightly<br>better</label>
+        </div>
+        <div class="rating-option">
+          <input type="radio" id="clarity-b-much" name="clarity" value="B_much_better">
+          <label for="clarity-b-much">B much<br>better</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contextual Fit -->
+    <div class="rating-question">
+      <label class="question-label">CONTEXTUAL FIT</label>
+      <p class="question-description">Which rules better address the actual problems from the WhatsApp chat (political argument, unknown number, profanity, product spam)?</p>
+      <div class="rating-options">
+        <div class="rating-option">
+          <input type="radio" id="context-a-much" name="contextualFit" value="A_much_better">
+          <label for="context-a-much">A much<br>better</label>
+        </div>
+        <div class="rating-option">
+          <input type="radio" id="context-a-slight" name="contextualFit" value="A_slightly_better">
+          <label for="context-a-slight">A slightly<br>better</label>
+        </div>
+        <div class="rating-option">
+          <input type="radio" id="context-equal" name="contextualFit" value="Equal">
+          <label for="context-equal">Equal</label>
+        </div>
+        <div class="rating-option">
+          <input type="radio" id="context-b-slight" name="contextualFit" value="B_slightly_better">
+          <label for="context-b-slight">B slightly<br>better</label>
+        </div>
+        <div class="rating-option">
+          <input type="radio" id="context-b-much" name="contextualFit" value="B_much_better">
+          <label for="context-b-much">B much<br>better</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Enforceability -->
+    <div class="rating-question">
+      <label class="question-label">ENFORCEABILITY</label>
+      <p class="question-description">As a group admin, which rules would make it easier to identify violations and take action?</p>
+      <div class="rating-options">
+        <div class="rating-option">
+          <input type="radio" id="enforce-a-much" name="enforceability" value="A_much_better">
+          <label for="enforce-a-much">A much<br>better</label>
+        </div>
+        <div class="rating-option">
+          <input type="radio" id="enforce-a-slight" name="enforceability" value="A_slightly_better">
+          <label for="enforce-a-slight">A slightly<br>better</label>
+        </div>
+        <div class="rating-option">
+          <input type="radio" id="enforce-equal" name="enforceability" value="Equal">
+          <label for="enforce-equal">Equal</label>
+        </div>
+        <div class="rating-option">
+          <input type="radio" id="enforce-b-slight" name="enforceability" value="B_slightly_better">
+          <label for="enforce-b-slight">B slightly<br>better</label>
+        </div>
+        <div class="rating-option">
+          <input type="radio" id="enforce-b-much" name="enforceability" value="B_much_better">
+          <label for="enforce-b-much">B much<br>better</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Perceived Legitimacy -->
+    <div class="rating-question">
+      <label class="question-label">PERCEIVED LEGITIMACY</label>
+      <p class="question-description">Which rules would you be more willing to follow if they were posted in your family WhatsApp group?</p>
+      <div class="rating-options">
+        <div class="rating-option">
+          <input type="radio" id="legit-a-much" name="perceivedLegitimacy" value="A_much_better">
+          <label for="legit-a-much">A much<br>better</label>
+        </div>
+        <div class="rating-option">
+          <input type="radio" id="legit-a-slight" name="perceivedLegitimacy" value="A_slightly_better">
+          <label for="legit-a-slight">A slightly<br>better</label>
+        </div>
+        <div class="rating-option">
+          <input type="radio" id="legit-equal" name="perceivedLegitimacy" value="Equal">
+          <label for="legit-equal">Equal</label>
+        </div>
+        <div class="rating-option">
+          <input type="radio" id="legit-b-slight" name="perceivedLegitimacy" value="B_slightly_better">
+          <label for="legit-b-slight">B slightly<br>better</label>
+        </div>
+        <div class="rating-option">
+          <input type="radio" id="legit-b-much" name="perceivedLegitimacy" value="B_much_better">
+          <label for="legit-b-much">B much<br>better</label>
+        </div>
+      </div>
+    </div>
+
+    <button class="next-btn" id="next-btn">NEXT COMPARISON</button>
+  </div>
+
+  <!-- WhatsApp Drawer -->
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+  <div class="whatsapp-drawer" id="whatsapp-drawer">
+    <div class="drawer-header">
+      <h3>WhatsApp Conversation</h3>
+      <button class="close-drawer-btn" id="close-drawer-btn">&times;</button>
+    </div>
+    <div class="drawer-content">
+      <iframe
+        id="whatsapp-iframe"
+        src="whatsapp-mock/index.html"
+        style="width: 100%; height: 100%; border: none; border-radius: 8px;"
+        frameborder="0">
+      </iframe>
+    </div>
+  </div>
+
+  <script src="exp2b_rating.js"></script>
+</body>
+</html>
