@@ -41,6 +41,7 @@ const errorMessage = document.getElementById('error-message');
 // Rating inputs
 const clarityInputs = document.querySelectorAll('input[name="clarity"]');
 const contextInputs = document.querySelectorAll('input[name="contextualFit"]');
+const toneInputs = document.querySelectorAll('input[name="tone"]');
 const enforceInputs = document.querySelectorAll('input[name="enforceability"]');
 const legitimacyInputs = document.querySelectorAll('input[name="perceivedLegitimacy"]');
 
@@ -181,6 +182,7 @@ function displayPair(index) {
 function clearRatings() {
   clarityInputs.forEach(input => input.checked = false);
   contextInputs.forEach(input => input.checked = false);
+  toneInputs.forEach(input => input.checked = false);
   enforceInputs.forEach(input => input.checked = false);
   legitimacyInputs.forEach(input => input.checked = false);
   nextBtn.disabled = true;
@@ -191,10 +193,11 @@ function clearRatings() {
 function validateRatings() {
   const claritySelected = Array.from(clarityInputs).some(input => input.checked);
   const contextSelected = Array.from(contextInputs).some(input => input.checked);
+  const toneSelected = Array.from(toneInputs).some(input => input.checked);
   const enforceSelected = Array.from(enforceInputs).some(input => input.checked);
   const legitimacySelected = Array.from(legitimacyInputs).some(input => input.checked);
 
-  return claritySelected && contextSelected && enforceSelected && legitimacySelected;
+  return claritySelected && contextSelected && toneSelected && enforceSelected && legitimacySelected;
 }
 
 // Get current ratings
@@ -202,6 +205,7 @@ function getCurrentRatings() {
   return {
     clarity: Array.from(clarityInputs).find(input => input.checked)?.value || null,
     contextualFit: Array.from(contextInputs).find(input => input.checked)?.value || null,
+    tone: Array.from(toneInputs).find(input => input.checked)?.value || null,
     enforceability: Array.from(enforceInputs).find(input => input.checked)?.value || null,
     perceivedLegitimacy: Array.from(legitimacyInputs).find(input => input.checked)?.value || null
   };
@@ -235,7 +239,7 @@ drawerOverlay.addEventListener('click', () => {
 });
 
 // Enable/disable next button based on validation
-[...clarityInputs, ...contextInputs, ...enforceInputs, ...legitimacyInputs].forEach(input => {
+[...clarityInputs, ...contextInputs, ...toneInputs, ...enforceInputs, ...legitimacyInputs].forEach(input => {
   input.addEventListener('change', () => {
     if (validateRatings()) {
       nextBtn.disabled = false;
@@ -249,7 +253,7 @@ drawerOverlay.addEventListener('click', () => {
 // Next/Submit button
 nextBtn.addEventListener('click', async () => {
   if (!validateRatings()) {
-    showError('Please answer all four questions before continuing.');
+    showError('Please answer all five questions before continuing.');
     return;
   }
 

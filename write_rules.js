@@ -372,11 +372,11 @@ function canSubmit() {
   let hasPromptedAI = false;
 
   if (currentCondition === '1') {
-    // Human Only: Check for at least 15 words
+    // Human Only: Check for at least 20 words
     const text = humanOnlyTextarea ? humanOnlyTextarea.value.trim() : '';
     const wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
     hasRules = text.length > 0;
-    hasEnoughWords = wordCount >= 15;
+    hasEnoughWords = wordCount >= 20;
   } else {
     // Human + AI: Only check if user has prompted AI at least once
     hasPromptedAI = sessionStorage.getItem('exp2_generated_rules') !== null;
