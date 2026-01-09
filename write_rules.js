@@ -528,7 +528,7 @@ Format the rules as a list and do not generate any redundant or unnecessary text
     body: JSON.stringify({
       prompt: fullPrompt,
       model: 'models/gemini-2.5-pro',
-      temperature: 0.7,
+      temperature: 1,
       topP: 0.9,
     }),
   });
