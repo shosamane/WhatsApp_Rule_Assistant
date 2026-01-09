@@ -520,7 +520,7 @@ ${messagesContext}
 
 User's request: ${prompt}
 
-Format the rules as a list and write succinctly.`;
+Format the rules as a list, without formatting and try to keep each rule under 10-12 words. Write succinctly when you can.`;
 
   const resp = await fetch('/webhook3/api/generate', {
     method: 'POST',
