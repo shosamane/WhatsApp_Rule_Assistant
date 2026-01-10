@@ -110,7 +110,7 @@ function displayCompletionMessage(source, code) {
         <strong>Please click the link below to return to Prolific and complete your submission:</strong>
       </p>
       <p style="margin: 2rem 0; text-align: center;">
-        <a href="https://app.prolific.com/submissions/complete?cc=CFZDBHVB"
+        <a href="https://app.prolific.com/submissions/complete?cc=CLX3FCT2"
            target="_blank"
            style="display: inline-block; background: #1565C0; color: white; padding: 1rem 2rem; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 1.1rem; transition: all 0.2s;">
           Complete Prolific Submission
