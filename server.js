@@ -324,7 +324,7 @@ app.post(`${base}/api/get-rules-for-comparison`, async (req, res) => {
     const allSubmissions = await coll.find({
       'recruitment.participantId': { $ne: participantId },
       'progressStatus': 'demographics_complete',
-      'rules.finalRules': { $exists: true, $ne: null, $ne: '' }
+      'rules.finalRules': { $exists: true, $nin: [null, ''] }
     }).toArray();
 
     console.log(`[get-rules-for-comparison] Found ${allSubmissions.length} total submissions`);
