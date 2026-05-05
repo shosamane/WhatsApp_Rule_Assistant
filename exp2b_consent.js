@@ -186,7 +186,7 @@ continueBtn.addEventListener('click', () => {
   // Save to backend
   saveProgress('recruitment_complete').then(() => {
     // Navigate to rating page
-    window.location.href = 'exp2b_rating.html';
+    window.location.href = 'exp2b_conversation.html';
   });
 });
 

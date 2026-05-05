@@ -290,7 +290,7 @@ nextBtn.addEventListener('click', async () => {
     try {
       await saveProgress('rating_complete');
       console.log('[Next] Navigating to completion page');
-      window.location.href = 'exp2b_completion.html';
+      window.location.href = 'exp2b_demographics.html';
     } catch (error) {
       console.error('[Next] Error saving final ratings:', error);
       showError('Failed to submit. Please try again.');
@@ -326,9 +326,14 @@ async function saveProgress(pageName) {
         urlIdentifier: urlIdentifier
       },
       comparisons: allRatings,
+      scrollTracking: {
+        scrolledToBottom: sessionStorage.getItem('exp2b_scrolled_to_bottom') === 'true',
+        scrolledToBottomTimestamp: sessionStorage.getItem('exp2b_scrolled_to_bottom_timestamp')
+      },
       timestamps: {
         consentComplete: sessionStorage.getItem('exp2b_consent_timestamp'),
         recruitmentComplete: sessionStorage.getItem('exp2b_recruitment_timestamp'),
+        conversationRead: sessionStorage.getItem('exp2b_conversation_read_timestamp'),
         ratingStarted: sessionStorage.getItem('exp2b_rating_started') || (pageName === 'rating_started' ? new Date().toISOString() : null),
         ratingComplete: pageName === 'rating_complete' ? new Date().toISOString() : null
       },
@@ -336,9 +341,12 @@ async function saveProgress(pageName) {
       progressStatus: pageName
     };
 
-    // Save rating started timestamp
+    // Save timestamps to sessionStorage for downstream pages
     if (pageName === 'rating_started' && !sessionStorage.getItem('exp2b_rating_started')) {
       sessionStorage.setItem('exp2b_rating_started', new Date().toISOString());
+    }
+    if (pageName === 'rating_complete') {
+      sessionStorage.setItem('exp2b_rating_complete', new Date().toISOString());
     }
 
     const resp = await fetch('/webhook3/api/store-exp2b', {
