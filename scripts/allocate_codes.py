@@ -16,7 +16,7 @@ DB_NAME = "whatsapp_rule_assistant"  # Must match server.js database
 COLLECTION_NAME = "completion_codes"  # Separate from submissions collection
 
 # Webapp URL for CSV export
-WEBAPP_URL = "go.rutgers.edu/whatsapprules"
+WEBAPP_URL = "https://go.rutgers.edu/whatsapprules"
 
 def allocate_codes(n, platform, unique_urls=False):
     """
@@ -91,22 +91,17 @@ def allocate_codes(n, platform, unique_urls=False):
     mode_suffix = "_unique_urls" if unique_urls else ""
     csv_filename = f"codes_{platform}_{n}_{timestamp}{mode_suffix}.csv"
 
-    # Write to CSV
+    # Write to CSV (Clickworker template format: ID, url_to_survey, confirmation_code)
     with open(csv_filename, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        # Write header
-        if unique_urls:
-            writer.writerow(['URL', 'URL_Identifier', 'Code'])
-        else:
-            writer.writerow(['URL', 'Code'])
+        writer.writerow(['ID', 'url_to_survey', 'confirmation_code'])
 
-        # Write data
         for i, code in enumerate(codes):
             if unique_urls:
                 url_with_id = f"{WEBAPP_URL}?code={url_identifiers[i]}"
-                writer.writerow([url_with_id, url_identifiers[i], code])
             else:
-                writer.writerow([WEBAPP_URL, code])
+                url_with_id = WEBAPP_URL
+            writer.writerow([i + 1, url_with_id, code])
 
     print(f"✓ Exported to: {csv_filename}")
     print(f"\nCodes allocated:")
