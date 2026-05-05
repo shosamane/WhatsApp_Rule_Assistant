@@ -25,6 +25,8 @@ const demoEducationFinal = document.getElementById('demo-education-final');
 const demoWaFrequencyFinal = document.getElementById('demo-wa-frequency-final');
 const demoWaAdminGroupsFinal = document.getElementById('demo-wa-admin-groups-final');
 const demoAdminDurationFinal = document.getElementById('demo-admin-duration-final');
+const demoActiveAdminFinal = document.getElementById('demo-active-admin-final');
+const demoGroupTypeFinal = document.getElementById('demo-group-type-final');
 const demoRulesConfidenceFinal = document.getElementById('demo-rules-confidence-final');
 const demoRulesControlFinal = document.getElementById('demo-rules-control-final');
 const demoRulesEaseFinal = document.getElementById('demo-rules-ease-final');
@@ -139,6 +141,7 @@ function validateFinalDemographics() {
   if (!demoAgeFinal || !demoGenderFinal || !demoLocationFinal ||
       !demoEducationFinal || !demoWaFrequencyFinal ||
       !demoWaAdminGroupsFinal || !demoAdminDurationFinal ||
+      !demoActiveAdminFinal || !demoGroupTypeFinal ||
       !demoRulesConfidenceFinal || !demoRulesControlFinal ||
       !demoRulesEaseFinal || !demoRulesSatisfactionFinal || !demoAttentionCheckFinal) {
     return false;
@@ -151,6 +154,8 @@ function validateFinalDemographics() {
   const waFreq = demoWaFrequencyFinal.value;
   const waAdminGroups = demoWaAdminGroupsFinal.value;
   const adminDur = demoAdminDurationFinal.value;
+  const activeAdmin = demoActiveAdminFinal.value;
+  const groupType = demoGroupTypeFinal.value.trim();
   const rulesConf = demoRulesConfidenceFinal.value;
   const rulesControl = demoRulesControlFinal.value;
   const rulesEase = demoRulesEaseFinal.value;
@@ -158,8 +163,8 @@ function validateFinalDemographics() {
   const attCheck = demoAttentionCheckFinal.value;
 
   return age && gender && location && education && waFreq &&
-         waAdminGroups && adminDur && rulesConf && rulesControl &&
-         rulesEase && rulesSat && attCheck;
+         waAdminGroups && adminDur && activeAdmin && groupType &&
+         rulesConf && rulesControl && rulesEase && rulesSat && attCheck;
 }
 
 // Enable/disable submit button based on validation
@@ -170,6 +175,7 @@ function updateSubmitButton() {
 // Add input listeners
 [demoAgeFinal, demoGenderFinal, demoLocationFinal, demoEducationFinal,
  demoWaFrequencyFinal, demoWaAdminGroupsFinal, demoAdminDurationFinal,
+ demoActiveAdminFinal, demoGroupTypeFinal,
  demoRulesConfidenceFinal, demoRulesControlFinal, demoRulesEaseFinal,
  demoRulesSatisfactionFinal, demoAttentionCheckFinal].forEach(el => {
   if (el) {
@@ -350,6 +356,8 @@ async function saveProgress(pageName, completionCode = null, attentionCheckPasse
         whatsappFrequency: demoWaFrequencyFinal.value,
         whatsappAdminGroups: demoWaAdminGroupsFinal.value,
         adminDuration: demoAdminDurationFinal.value,
+        activeAdmin: demoActiveAdminFinal.value,
+        groupType: demoGroupTypeFinal.value,
         rulesConfidence: demoRulesConfidenceFinal.value,
         rulesControl: demoRulesControlFinal.value,
         rulesEase: demoRulesEaseFinal.value,

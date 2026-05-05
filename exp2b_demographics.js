@@ -25,6 +25,8 @@ const demoEducation = document.getElementById('demo-education');
 const demoWaFrequency = document.getElementById('demo-wa-frequency');
 const demoWaAdminGroups = document.getElementById('demo-wa-admin-groups');
 const demoAdminDuration = document.getElementById('demo-admin-duration');
+const demoActiveAdmin = document.getElementById('demo-active-admin');
+const demoGroupType = document.getElementById('demo-group-type');
 const demoAttentionCheck = document.getElementById('demo-attention-check');
 const submitBtn = document.getElementById('submit-btn');
 const submissionMessage = document.getElementById('submission-message');
@@ -91,10 +93,12 @@ function validate() {
   const waFreq = demoWaFrequency.value;
   const waAdminGroups = demoWaAdminGroups.value;
   const adminDur = demoAdminDuration.value;
+  const activeAdmin = demoActiveAdmin.value;
+  const groupType = demoGroupType.value.trim();
   const attCheck = demoAttentionCheck.value;
 
   return age && gender && location && education && waFreq &&
-         waAdminGroups && adminDur && attCheck;
+         waAdminGroups && adminDur && activeAdmin && groupType && attCheck;
 }
 
 // Enable/disable submit button
@@ -105,7 +109,7 @@ function updateSubmitButton() {
 // Add input listeners
 [demoAge, demoGender, demoLocation, demoEducation,
  demoWaFrequency, demoWaAdminGroups, demoAdminDuration,
- demoAttentionCheck].forEach(el => {
+ demoActiveAdmin, demoGroupType, demoAttentionCheck].forEach(el => {
   if (el) {
     el.addEventListener('input', updateSubmitButton);
     el.addEventListener('change', updateSubmitButton);
@@ -162,6 +166,8 @@ async function saveProgress(pageName, attentionCheckPassed = null) {
         whatsappFrequency: demoWaFrequency.value,
         whatsappAdminGroups: demoWaAdminGroups.value,
         adminDuration: demoAdminDuration.value,
+        activeAdmin: demoActiveAdmin.value,
+        groupType: demoGroupType.value,
         attentionCheck: demoAttentionCheck.value,
         attentionCheckExpected: correctAttentionCheckAnswer,
         attentionCheckPassed: attentionCheckPassed
