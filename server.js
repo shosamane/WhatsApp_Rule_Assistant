@@ -167,7 +167,17 @@ app.post(`${base}/api/get-code`, async (req, res) => {
 
     console.log('[get-code] findOneAndUpdate result:', JSON.stringify(result, null, 2));
 
-    // Handle both result.value (newer drivers) and result directly (older drivers)
+    // In MongoDB driver v5+, findOneAndUpdate returns null when no match is found.
+    // In older drivers (v3/v4), it returns { value: null }.
+    if (result === null || result === undefined) {
+      console.error('[get-code] No matching code found (result is null)');
+      if (urlIdentifier !== undefined && urlIdentifier !== null) {
+        return res.status(404).json({ error: 'invalid_url_identifier', hint: 'The URL identifier is invalid or has already been used' });
+      }
+      return res.status(404).json({ error: 'no_codes_available' });
+    }
+
+    // Handle both result.value (older drivers v3/v4) and result directly (newer drivers v5+)
     const document = result.value || result;
 
     if (!document || !document.code) {

@@ -73,6 +73,49 @@ let urlIdentifier = null;
   }
 })();
 
+// Validate URL identifier on page load
+async function validateUrlIdentifier() {
+  if (urlIdentifier === null) {
+    return true; // Direct access is valid
+  }
+
+  try {
+    const resp = await fetch('/webhook3/api/validate-url-identifier', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ urlIdentifier })
+    });
+
+    const data = await resp.json();
+
+    if (!data.valid) {
+      // Hide all content and show error
+      document.body.innerHTML = `
+        <div style="max-width: 600px; margin: 4rem auto; padding: 2rem; text-align: center; font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;">
+          <h1 style="color: #c62828; margin-bottom: 1rem;">Invalid Access Link</h1>
+          <p style="font-size: 1.1rem; line-height: 1.6; color: #333;">
+            ${data.reason === 'already_used'
+              ? 'This link has already been used and is no longer valid.'
+              : 'The link you used is invalid or does not exist.'}
+          </p>
+          <p style="font-size: 1rem; line-height: 1.6; color: #666; margin-top: 1.5rem;">
+            Please contact the study administrator for assistance.
+          </p>
+        </div>
+      `;
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('[Init] Validation error:', err);
+    // Allow access on validation error to avoid blocking legitimate users
+    return true;
+  }
+}
+
+// Initialize
+validateUrlIdentifier();
+
 // Consent handling
 consentAgreeBtn.addEventListener('click', () => {
   consentGiven = true;
